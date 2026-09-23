@@ -1,0 +1,41 @@
+@article{Todescato-Efficient-2020,
+    title = {Efficient spatio-temporal Gaussian regression via Kalman filtering},
+    journal = {Automatica},
+    volume = {118},
+    pages = {109032},
+    year = {2020},
+    issn = {0005-1098},
+    doi = {https://doi.org/10.1016/j.automatica.2020.109032},
+    url = {https://www.sciencedirect.com/science/article/pii/S0005109820302302},
+    author = {Marco Todescato and Andrea Carron and Ruggero Carli and Gianluigi Pillonetto and Luca Schenato},
+    keywords = {Spatio-temporal Gaussian processes, Kalman filter, Machine learning, Representer theorem, Separable kernel functions},
+    abstract = {We study the non-parametric reconstruction of spatio-temporal dynamical processes via Gaussian Processes (GPs) regression from sparse and noisy data. GPs have been mainly applied to spatial regression where they represent one of the most powerful estimation approaches also thanks to their universal representing properties. Their extension to dynamical processes has been instead elusive so far since classical implementations lead to unscalable algorithms or require some sort of approximation. We propose a novel procedure to address this problem by coupling GPs regression and Kalman filtering. In particular, assuming space/time separability of the covariance (kernel) of the process and rational time spectrum, we build a finite-dimensional discrete-time state-space process representation amenable to Kalman filtering. With sampling over a finite set of fixed spatial locations, our major finding is that the current Kalman filter state represents a sufficient statistic to compute the minimum variance estimate of the process at any future time over the entire spatial domain. In machine learning, a representer theorem states that an important class of infinite-dimensional variational problems admits a computable and finite-dimensional exact solution. In view of this, our result can be interpreted as a novel Dynamic Representer Theorem for GPs. We then extend the study to situations where the spatial input locations set varies over time. The proposed algorithms are tested on both synthetic and real field data, providing comparisons with standard GP and truncated GP regression techniques.}
+}
+
+@Article{Chu-PM25-Review-2016,
+    AUTHOR = {Chu, Yuanyuan and Liu, Yisi and Li, Xiangyu and Liu, Zhiyong and Lu, Hanson and Lu, Yuanan and Mao, Zongfu and Chen, Xi and Li, Na and Ren, Meng and Liu, Feifei and Tian, Liqiao and Zhu, Zhongmin and Xiang, Hao},
+    TITLE = {{A Review on Predicting Ground PM2.5 Concentration Using Satellite Aerosol Optical Depth}},
+    JOURNAL = {Atmosphere},
+    VOLUME = {7},
+    YEAR = {2016},
+    NUMBER = {10},
+    ARTICLE-NUMBER = {129},
+    URL = {https://www.mdpi.com/2073-4433/7/10/129},
+    ISSN = {2073-4433},
+    ABSTRACT = {This study reviewed the prediction of fine particulate matter (PM2.5) from satellite aerosol optical depth (AOD) and summarized the advantages and limitations of these predicting models. A total of 116 articles were included from 1436 records retrieved. The number of such studies has been increasing since 2003. Among these studies, four predicting models were widely used: Multiple Linear Regression (MLR) (25 articles), Mixed-Effect Model (MEM) (23 articles), Chemical Transport Model (CTM) (16 articles) and Geographically Weighted Regression (GWR) (10 articles). We found that there is no so-called best model among them and each has both advantages and limitations. Regarding the prediction accuracy, MEM performs the best, while MLR performs worst. CTM predicts PM2.5 better on a global scale, while GWR tends to perform well on a regional level. Moreover, prediction performance can be significantly improved by combining meteorological variables with land use factors of each region, instead of only considering meteorological variables. In addition, MEM has advantages in dealing with the AOD data with missing values. We recommend that with the help of higher resolution AOD data, future works could be focused on developing satellite-based predicting models for the prediction of historical PM2.5 and other air pollutants.},
+    DOI = {10.3390/atmos7100129}
+}
+
+@article{Kianian-Multi-Res-Impute-2021,
+    AUTHOR = {Kianian, Behzad and Liu, Yang and Chang, Howard H.},
+    TITLE = {{Imputing Satellite-Derived Aerosol Optical Depth Using a Multi-Resolution Spatial Model and Random Forest for PM2.5 Prediction}},
+    JOURNAL = {Remote Sensing},
+    VOLUME = {13},
+    YEAR = {2021},
+    NUMBER = {1},
+    ARTICLE-NUMBER = {126},
+    URL = {https://www.mdpi.com/2072-4292/13/1/126},
+    ISSN = {2072-4292},
+    ABSTRACT = {A task for environmental health research is to produce complete pollution exposure maps despite limited monitoring data. Satellite-derived aerosol optical depth (AOD) is frequently used as a predictor in various models to improve PM2.5 estimation, despite significant gaps in coverage. We analyze PM2.5 and AOD from July 2011 in the contiguous United States. We examine two methods to aid in gap-filling AOD: (1) lattice kriging, a spatial statistical method adapted to handle large amounts data, and (2) random forest, a tree-based machine learning method. First, we evaluate each model’s performance in the spatial prediction of AOD, and we additionally consider ensemble methods for combining the predictors. In order to accurately assess the predictive performance of these methods, we construct spatially clustered holdouts to mimic the observed patterns of missing data. Finally, we assess whether gap-filling AOD through one of the proposed ensemble methods can improve prediction of PM2.5 in a random forest model. Our results suggest that ensemble methods of combining lattice kriging and random forest can improve AOD gap-filling. Based on summary metrics of performance, PM2.5 predictions based on random forest models were largely similar regardless of the inclusion of gap-filled AOD, but there was some variability in daily model predictions.},
+    DOI = {10.3390/rs13010126}
+}

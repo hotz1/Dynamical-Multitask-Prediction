@@ -1,0 +1,86 @@
+\documentclass[12pt]{article}
+\input{../tex-macros/general-typeset.tex}
+\input{../tex-macros/math-macros.tex}
+\input{../tex-macros/math-alphabets-ams.tex}
+
+\usepackage{caption,subcaption}
+\usepackage{pifont}
+\usepackage[authoryear]{natbib}
+\bibliographystyle{apalike}
+
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{url}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{booktabs}
+\usepackage{nicefrac}
+
+\hypersetup{
+    colorlinks = true,
+    citecolor = BlueViolet,
+    linkcolor = RedOrange,
+    urlcolor = ProcessBlue
+}
+
+
+% numbering for things by section
+\renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
+\renewcommand{\thefigure}{\arabic{section}.\arabic{figure}}
+\renewcommand{\thetable}{\arabic{section}.\arabic{table}}
+\numberwithin{equation}{section}
+\numberwithin{figure}{section}
+\numberwithin{table}{section}
+
+\creflabelformat{equation}{#2#1#3}
+
+\newcommand{\PM}[1]{\textrm{PM}_{#1}}
+
+\begin{document}
+
+\begin{center}
+    {\LARGE{\textbf{Computationally efficient methods for predicting air pollutant concentrations via Kalman filtering and Gaussian processes}}}
+    \vspace*{2cm}
+
+    {\Large{Joey Hotz}}\\
+    \vspace*{1cm}
+    {\large{University of Toronto, Department of Statistical Sciences}}\\
+    \vspace*{1cm}
+    {\large{August 31, 2026}}
+
+    \vfill
+
+    % All code for this project will be available on GitHub in a public repository: \url{https://github.com/hotz1/STA2201-Final-Project}
+\end{center}
+\thispagestyle{empty}
+\clearpage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\section{Project Background}\label{sec:background}
+
+The primary paper which serves as the foundation for this project is \emph{Efficient spatio-temporal Gaussian regression via Kalman filtering} by \Citet{Todescato-Efficient-2020}.
+
+This paper introduces a methodology for developing estimates of a stochastic dynamical process using Gaussian process regression and Kalman filters on the spatial and temporal aspects of the stochastic process based on certain assumptions of the spatial and temporal processes which guide the `evolution' of the dynamical system over time. 
+
+In particular, the key assumption which motivates the work of the authors is that the kernel function representing the covariance between recorded observations taken at different times and/or spaces can be decomposed into the product of two components; one a function of space, and the other a function of time. In particular, the authors assume that the covariance kernel function $K((x, t), (x', t'))$ can be decomposed into the product of a spatial correlation term $K_{s}(x, x')$ and a temporal term $\varphi(t - t')$ which is stationary with respect to time.  
+
+\section{Project Outline}\label{sec:outline}
+
+The focus of this project will be to discuss the motivation behind the work done by Todescato et al. by first explaining the necessary background surrounding Gaussian process regression and Kalman filtering, as these are the two essential ingredients used in their proposed algorithm. We will then describe some of the particular assumptions required for the proposed algorithm, such as the specific requirements for the covariance kernel function and why these precise requirements are needed in developing the theory and the algorithm given by the authors.
+
+Following this, we will extend the work of the authors to a novel dataset which primarily meets the requirements for the original setup, with some additional wrinkles that must be addressed.
+
+\section{Extension}\label{sec:extensions}
+
+The primary extension to this paper will be to apply the proposed methodology to predict the quantity of air pollutants based on existing real-world data. In particular, we aim to extend the methodology proposed by Todescato et al. to estimate the concentration of $\PM{2.5}$ particulate matter in the air in locations across Canada. $\PM{2.5}$ is a form of fine particulate matter with a total diameter of less than 2.5 microns ($2.5 \times 10^{-6}$m), and these particles have been associated with a variety of adverse health effects, including asthma, respiratory illness, and lung cancer \citep{Chu-PM25-Review-2016, Kianian-Multi-Res-Impute-2021}. 
+
+There are two primary sources of data for $\PM{2.5}$ concentration measurements; ground-level measurements recorded periodically by fixed-place sensors located on the ground, and satellite data measured by instruments such as NASA's MAIA and MISR aerosol-tracking projects, which provide overhead measurements of particulate matter concentrations over a larger region of the Earth's surface. One of the purposes of this extension is to assess how well the methodology proposed in the original paper will be extended to multi-resolution data, which is why we have chosen to use these data as a litmus test for the methodology.
+
+Furthermore, $\PM{2.5}$ particles can be broken down into several different components, including nitrates, sulfates, and dust particles. As such, these measurements can be treated as a multi-dimensional output vector, where the concentrations are treated as a vector of the concentration of several respective components. This too is an extension of the original methodology, as the original paper focuses solely on the case in which the output is a univariate response. However, Gaussian processes and Kalman filtering methods can both individually be applied to multi-dimensional outputs, so extending this research along these lines may be fruitful.
+
+\clearpage
+
+\bibliography{outline-references}
+
+\end{document}

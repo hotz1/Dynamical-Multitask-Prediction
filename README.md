@@ -10,6 +10,6 @@ This repository includes a transformation of the authors' code from MATLAB into 
 
 This GitHub repository contains an unaltered copy of [the GitHub repository](https://github.com/MarcoTodescato/Efficient-GP-Regression-via-Kalman-Filtering) developed by Todescato et al. for their paper.
 
-The code written by Todescato et al. is stored in the sub-directory [/Code/Todescato-Code/](Code/Todescato-Code/). This copy of their repository is included to ensure full reproducibility, as the datasets used in their paper are directly transformed into Python-readable CSV files (see [/Code/convert-data.py](Code/convert-data.py)) as a part of this project. 
+The code written by Todescato et al. is stored in the sub-directory [/Todescato-Code/](./Todescato-Code/). This copy of their repository is included to ensure full reproducibility, as the datasets used in their paper are directly transformed into Python-readable CSV files (see [/Code/data/convert-data.py](Code/data/convert-data.py)) as a part of this project. 
 
 Though the code is available within this repository, it is strongly recommended to visit the authors' original repository for a fuller view of the development of these code files.

@@ -18,7 +18,8 @@ import pandas as pd
 from functions.load_colorado_data import read_colorado_csv
 
 # Code/data holds the CSV versions of Todescato et al.'s data
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+# DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_DIR = Path(__file__).resolve().parent / "data"
 COLORADO_PATH = DATA_DIR / "datasets" / "colorado.csv"
 GAUSSIAN_APPROX_DIR = DATA_DIR / "gaussian_time_kernel_approximations"
 
@@ -27,7 +28,7 @@ def _load_gaussian_time_approximation(ss_dim):
     """Return (num, den) of the precomputed Gaussian time-kernel approximation."""
     path = GAUSSIAN_APPROX_DIR / f"ssDim={ss_dim}_for_scale=1_std=1.csv"
     coeffs = pd.read_csv(path, index_col="coefficient")
-    return coeffs.loc["num"].to_numpy(dtype=np.float64), coeffs.loc["den"].to_numpy(dtype=np.float64)
+    return coeffs["num"].to_numpy(dtype=np.float64), coeffs["den"].to_numpy(dtype=np.float64)
 
 
 def load_parameters(data_type="synthetic", rng=None, gaussian_ss_dim=6):

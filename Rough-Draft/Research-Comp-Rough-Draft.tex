@@ -1,0 +1,169 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+% \usepackage[a4paper, total={6in, 8in}, margin = 3cm]{geometry}
+\usepackage[a4paper, margin = 3cm]{geometry}
+\usepackage[english]{babel}
+\usepackage{authblk}
+\usepackage{enumerate, enumitem}
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{setspace}
+\usepackage{natbib}
+
+% \input{../tex-macros/general-typeset.tex}
+\input{../tex-macros/math-macros.tex}
+\input{../tex-macros/math-alphabets-ams.tex}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}{Definition}[section]
+
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{url}
+\usepackage[dvipsnames]{xcolor}
+
+\definecolor{linkRed}{HTML}{ED1B23}
+\definecolor{citeBlue}{HTML}{006EB8}
+\definecolor{urlBlue}{HTML}{2B2BB0}
+\hypersetup{
+    colorlinks = true,
+    pdfborder = {0 0 0},
+    citebordercolor = {1 1 1},
+    linkcolor = linkRed,
+    citecolor = citeBlue,
+    urlcolor = urlBlue
+}
+
+\newcommand{\PM}[1]{\textrm{PM}_{#1}}
+\newcommand{\calGP}{\mathcal{GP}}
+
+\title{\textbf{Computationally Efficient Predictions for Multi-Output Spatiotemporal Dynamical Systems}} % put your fancy title here
+
+\author{
+    Joey Hotz \\ \vspace{-0.3cm}\normalsize\texttt{joey.hotz@mail.utoronto.ca}\\ % put your beautiful name and email here
+    \large
+    \vspace{0.5cm}
+    Supervisor: Dr. Meredith Franklin \\ % names of your almighty supervisors
+
+    \vspace{0.5cm}
+    Department of Statistical Sciences \\
+    University of Toronto
+}
+
+% \author{
+% Student Name \\ \texttt{emailaddress@mail.utoronto.ca} \\
+% \and
+% Supervisor(s): Supervisor Name(s) \\ [.5cm]Examiners: Examiner Names
+% }
+% \author{Student Name\thanks{Email: \texttt{emailaddress@mail.utoronto.ca}. Supervisor(s): Supervisor Name(s). Examiners: Examiner Names.}}
+% \author{supervised by: Supervisor A}
+
+
+% \affil{Department of Statistical Sciences\\University of Toronto}
+% \affil[1]{Department of Statistical Sciences, University of Toronto, Canada}
+% \affil[2]{Any additional affiliation}
+% \affil[3]{Any additional affiliation}
+
+\date{\today}
+
+\onehalfspacing
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    The abstract is here, which should have no citations/reference.
+\end{abstract}
+
+\bigskip
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+\label{sec:intro}
+
+The paper \emph{Efficient spatio-temporal Gaussian regression via Kalman filtering} \citep{Todescato-Efficient-2020} introduces a methodology for estimating future states of a spatio-temporal dynamical system using a combination of Gaussian process regression and Kalman filtering to account for spatial and temporal aspects which guide the `evolution' of the dynamical system of interest.
+
+
+\section{Background}
+\label{sec:background}
+
+\subsection{Gaussian Processes}
+
+A Gaussian process (GP) is a real-valued stochastic process indexed over some $D$-dimensional \emph{state space} $\calX \subseteq \bbR^{D}$ which satisfies the following key property:
+
+\begin{definition}
+    For any finite collection ($N$-tuple) of states $(x_{1}, \cdots, x_{N}) \subset \calX$, the joint distribution of the vector $\big(f(x_{1}), \cdots, f(x_{N})\big)$ follows a multivariate Gaussian distribution on $\bbR^{N}$. 
+\end{definition}
+
+Furthermore, every Gaussian process on the state space $\calX$ is fully specified by two real-valued functions on $\calX$, which respectively describe the mean and covariance of the underlying process \cite{GPML-Book-2006}. Formally, every Gaussian process defined on the underlying state space $\calX$ is \emph{uniquely} described by a mean function $\mu: \calX \to \bbR$ and a covariance (kernel) function $K: \calX \times \calX \to \bbR$ which provide the following structure:
+\begin{itemize}
+    \item \textbf{Mean:} $\mu(x) = \expec{Y(x)}$ for all $x \in \calX$. 
+    \item \textbf{Covariance:} $K(x, x') = \covar{Y(x)}{Y(x')}$ for all $(x, x') \in \calX \times \calX$.
+\end{itemize}
+As every Gaussian process on $\calX$ is uniquely determined by these two functions, we may simply write that $f \sim \calGP(\mu, K)$ to denote a Gaussian process with mean $\mu$ and kernel $K$.
+
+Due to these convenient properties, Gaussian processes are frequently used in a variety of practical statistical applications, ranging from geostatistics and climatology to fields such as electrical engineering and signal processing \citet{Sarkka-Spatial-Kalman-2012,Huang-Nonstationary-2025}.
+
+Gaussian process regression, often referred to in the literature as \emph{kriging} after the South African geostatistician Danie G. Krige \citep{Cressie-Origins-1990,Meta-Kriging-2018}, is a semi-parametric statistical modelling procedure wherein a finite collection of observations are used for learning the outputs of an unknown function defined on the state space $\calX$. 
+
+
+
+\subsection{Kalman Filtering}
+
+The Kalman filter (KF), first introduced by and eponymously named for Rudolf E. K\'{a}lm\'{a}n \citeyearpar{Kalman-Filter-1960}, is a technique for 
+
+\section{Problem Formulation}
+\label{sec:problem}
+
+% \subsection{Dynamical Gaussian Processes}
+
+% As described by \Citet*{Todescato-Efficient-2020} and \Citeauthor{van-Hulst-Dynamic-GP-2024}
+
+\section{Methodology}
+\label{sec:methods}
+
+\subsection{Replication}
+
+\subsection{Extension}
+
+\section{Results}
+\label{sec:results}
+
+\section{Conclusions}
+\label{sec:conclusion}
+
+\subsection{Limitations}
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Future Work}
+
+\bigskip
+\bigskip
+
+
+% References
+\newpage
+
+\bibliographystyle{apalike}
+\bibliography{draft-references}
+
+
+% Appendix
+\newpage
+\appendix
+\section*{Appendix}
+
+\section{Definitions and Technical Details}
+\label{sec:definitions}
+
+\section{Code and Simulation Outputs} 
+\label{sec:code} 
+For the sake of brevity, the code used in this project is not directly added to the appendix. All code is available in a public GitHub repository, which can be located at \url{https://github.com/hotz1/Dynamical-Multitask-Prediction}.
+\end{document}

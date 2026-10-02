@@ -1,0 +1,268 @@
+@article{Todescato-Efficient-2020,
+    title = {{Efficient spatio-temporal Gaussian regression via Kalman filtering}},
+    journal = {Automatica},
+    volume = {118},
+    pages = {109032},
+    month = {August},
+    year = {2020},
+    issn = {0005-1098},
+    doi = {https://doi.org/10.1016/j.automatica.2020.109032},
+    url = {https://www.sciencedirect.com/science/article/pii/S0005109820302302},
+    author = {Marco Todescato and Andrea Carron and Ruggero Carli and Gianluigi Pillonetto and Luca Schenato},
+    keywords = {Spatio-temporal Gaussian processes, Kalman filter, Machine learning, Representer theorem, Separable kernel functions},
+    abstract = {We study the non-parametric reconstruction of spatio-temporal dynamical processes via Gaussian Processes (GPs) regression from sparse and noisy data. GPs have been mainly applied to spatial regression where they represent one of the most powerful estimation approaches also thanks to their universal representing properties. Their extension to dynamical processes has been instead elusive so far since classical implementations lead to unscalable algorithms or require some sort of approximation. We propose a novel procedure to address this problem by coupling GPs regression and Kalman filtering. In particular, assuming space/time separability of the covariance (kernel) of the process and rational time spectrum, we build a finite-dimensional discrete-time state-space process representation amenable to Kalman filtering. With sampling over a finite set of fixed spatial locations, our major finding is that the current Kalman filter state represents a sufficient statistic to compute the minimum variance estimate of the process at any future time over the entire spatial domain. In machine learning, a representer theorem states that an important class of infinite-dimensional variational problems admits a computable and finite-dimensional exact solution. In view of this, our result can be interpreted as a novel Dynamic Representer Theorem for GPs. We then extend the study to situations where the spatial input locations set varies over time. The proposed algorithms are tested on  th synthetic and real field data, providing comparisons with standard GP and truncated GP regression techniques.}
+}
+
+@book{GPML-Book-2006,
+    title={{Gaussian Processes for Machine Learning}},
+    author={Carl Edward Rasmussen and Christopher K. I. Williams},
+    publisher={The MIT Press},
+    place={Cambridge, Massachusetts},
+    year={2006},
+    isbn = {0-262-18253-X},
+    url={https://gaussianprocess.org/gpml/},
+}
+
+@article{Kalman-Filter-1960,
+    author = {K\'{a}lm\'{a}n, Rudolf E.},
+    title = {{A New Approach to Linear Filtering and Prediction Problems}},
+    journal = {Journal of Basic Engineering},
+    volume = {82},
+    number = {1},
+    pages = {35-45},
+    year = {1960},
+    month = {03},
+    abstract = {The classical filtering and prediction problem is re-examined using the Bode-Shannon representation of random processes and the “state-transition” method of analysis of dynamic systems. New results are: (1) The formulation and methods of solution of the problem apply without modification to stationary and nonstationary statistics and to growing-memory and infinite-memory filters. (2) A nonlinear difference (or differential) equation is derived for the covariance matrix of the optimal estimation error. From the solution of this equation the co-efficients of the difference (or differential) equation of the optimal linear filter are obtained without further calculations. (3) The filtering problem is shown to be the dual of the noise-free regulator problem. The new method developed here is applied to two well-known problems, confirming and extending earlier results. The discussion is largely self-contained and proceeds from first principles; basic concepts of the theory of random processes are reviewed in the Appendix.},
+    issn = {0021-9223},
+    doi = {10.1115/1.3662552},
+    url = {https://doi.org/10.1115/1.3662552},
+    eprint = {https://asmedigitalcollection.asme.org/fluidsengineering/article-pdf/82/1/35/5518977/35_1.pdf},
+}
+
+@INPROCEEDINGS{Todescato-ML-Kalman-2016,
+    author = {Marco Todescato and Andrea Carron and Ruggero Carli and Gianluigi Pillonetto and Luca Schenato},
+    booktitle={2016 IEEE 55th Conference on Decision and Control (CDC)}, 
+    title={{Machine learning meets Kalman Filtering}}, 
+    year={2016},
+    volume={},
+    number={},
+    pages={4594-4599},
+    keywords={Kalman filters;Kernel;Gaussian processes;Covariance matrices;Complexity theory;Space stations;Gaussian regression;machine learning;Kalman filtering;spatio-temporal Gaussian processes},
+    doi={10.1109/CDC.2016.7798968}
+}
+
+
+@Article{Chu-PM25-Review-2016,
+    AUTHOR = {Chu, Yuanyuan and Liu, Yisi and Li, Xiangyu and Liu, Zhiyong and Lu, Hanson and Lu, Yuanan and Mao, Zongfu and Chen, Xi and Li, Na and Ren, Meng and Liu, Feifei and Tian, Liqiao and Zhu, Zhongmin and Xiang, Hao},
+    TITLE = {{A Review on Predicting Ground PM2.5 Concentration Using Satellite Aerosol Optical Depth}},
+    JOURNAL = {Atmosphere},
+    VOLUME = {7},
+    YEAR = {2016},
+    NUMBER = {10},
+    ARTICLE-NUMBER = {129},
+    URL = {https://www.mdpi.com/2073-4433/7/10/129},
+    ISSN = {2073-4433},
+    ABSTRACT = {This study reviewed the prediction of fine particulate matter (PM2.5) from satellite aerosol optical depth (AOD) and summarized the advantages and limitations of these predicting models. A total of 116 articles were included from 1436 records retrieved. The number of such studies has been increasing since 2003. Among these studies, four predicting models were widely used: Multiple Linear Regression (MLR) (25 articles), Mixed-Effect Model (MEM) (23 articles), Chemical Transport Model (CTM) (16 articles) and Geographically Weighted Regression (GWR) (10 articles). We found that there is no so-called best model among them and each has both advantages and limitations. Regarding the prediction accuracy, MEM performs the best, while MLR performs worst. CTM predicts PM2.5 better on a global scale, while GWR tends to perform well on a regional level. Moreover, prediction performance can be significantly improved by combining meteorological variables with land use factors of each region, instead of only considering meteorological variables. In addition, MEM has advantages in dealing with the AOD data with missing values. We recommend that with the help of higher resolution AOD data, future works could be focused on developing satellite-based predicting models for the prediction of historical PM2.5 and other air pollutants.},
+    DOI = {10.3390/atmos7100129}
+}
+
+@article{Kianian-Multi-Res-Impute-2021,
+    AUTHOR = {Kianian, Behzad and Liu, Yang and Chang, Howard H.},
+    TITLE = {{Imputing Satellite-Derived Aerosol Optical Depth Using a Multi-Resolution Spatial Model and Random Forest for PM2.5 Prediction}},
+    JOURNAL = {Remote Sensing},
+    VOLUME = {13},
+    YEAR = {2021},
+    NUMBER = {1},
+    ARTICLE-NUMBER = {126},
+    URL = {https://www.mdpi.com/2072-4292/13/1/126},
+    ISSN = {2072-4292},
+    ABSTRACT = {A task for environmental health research is to produce complete pollution exposure maps despite limited monitoring data. Satellite-derived aerosol optical depth (AOD) is frequently used as a predictor in various models to improve PM2.5 estimation, despite significant gaps in coverage. We analyze PM2.5 and AOD from July 2011 in the contiguous United States. We examine two methods to aid in gap-filling AOD: (1) lattice kriging, a spatial statistical method adapted to handle large amounts data, and (2) random forest, a tree-based machine learning method. First, we evaluate each model’s performance in the spatial prediction of AOD, and we additionally consider ensemble methods for combining the predictors. In order to accurately assess the predictive performance of these methods, we construct spatially clustered holdouts to mimic the observed patterns of missing data. Finally, we assess whether gap-filling AOD through one of the proposed ensemble methods can improve prediction of PM2.5 in a random forest model. Our results suggest that ensemble methods of combining lattice kriging and random forest can improve AOD gap-filling. Based on summary metrics of performance, PM2.5 predictions based on random forest models were largely similar regardless of the inclusion of gap-filled AOD, but there was some variability in daily model predictions.},
+    DOI = {10.3390/rs13010126}
+}
+
+@InProceedings{Sarkka-Spatial-Kalman-2012,
+    title = {{Infinite-Dimensional Kalman Filtering Approach to Spatio-Temporal Gaussian Process Regression}},
+    author = {S\"{a}rkk\"{a}, Simo and Hartikainen, Jouni},
+    booktitle = {Proceedings of the Fifteenth International Conference on Artificial Intelligence and Statistics},
+    pages = {993--1001},
+    year = {2012},
+    editor = {Lawrence, Neil D. and Girolami, Mark},
+    volume = {22},
+    series = {Proceedings of Machine Learning Research},
+    address = {La Palma, Canary Islands},
+    month = {21--23 Apr},
+    publisher = {PMLR},
+    pdf = {http://proceedings.mlr.press/v22/sarkka12/sarkka12.pdf},
+    url = {https://proceedings.mlr.press/v22/sarkka12.html}
+}
+
+@ARTICLE{Sarkka-GP-KF-2013,
+    author={S\"{a}rkk\"{a}, Simo and Solin, Arno and Hartikainen, Jouni},
+    journal={IEEE Signal Processing Magazine}, 
+    title={{Spatiotemporal Learning via Infinite-Dimensional Bayesian Filtering and Smoothing: A Look at Gaussian Process Regression Through Kalman Filtering}},
+    year={2013},
+    volume={30},
+    number={4},
+    pages={51-61},
+    keywords={Machine learning;Learning systems;Gaussian processes;Bayes methods;Parametric statistics;Linear regression analysis;Kalman filters;Smoothing methods;Spatiotemporal phenomena;Kernel},
+    doi={10.1109/MSP.2013.2246292}
+}
+
+@inproceedings{van-Hulst-Dynamic-GP-2024,
+    title = {{Estimation of Dynamic Gaussian Processes}},
+    abstract = {Gaussian processes provide a compact representation for modeling and estimating an unknown function, that can be updated as new measurements of the function are obtained. This paper extends this powerful framework to the case where the unknown function dynamically changes over time. Specifically, we assume that the function evolves according to an integro-difference equation and that the measurements are obtained locally in a spatial sense. In this setting, we will provide the expressions for the conditional mean and covariance of the process given the measurements, which results in a generalized estimation framework, for which we coined the term Dynamic Gaussian Process (DGP) estimation. This new framework generalizes both Gaussian process regression and Kalman filtering. For a broad class of kernels, described by a set of basis functions, fast implementations are provided. We illustrate the results on a numerical example, demonstrating that the method can accurately estimate an evolving continuous function, even in the presence of noisy measurements and disturbances.},
+    author={Jilles van Hulst and Roy van Zuijlen and Duarte Antunes and W. P. M. H. Heemels},
+    year = {2024},
+    month = jan,
+    day = {19},
+    doi = {10.1109/CDC49753.2023.10383256},
+    language = {English},
+    pages = {3206--3211},
+    booktitle = {2023 62nd IEEE Conference on Decision and Control, CDC 2023},
+    publisher = {Institute of Electrical and Electronics Engineers},
+    address = {United States},
+    note = {62nd IEEE Conference on Decision and Control, CDC 2023, CDC 2023; Conference date: 13-12-2023 through 15-12-2023}
+}
+
+@inproceedings{Pfoertner-Comp-Aware-2025,
+    author = {Pf\"{o}rtner, Marvin and Wenger, Jonathan and Cockayne, Jon and Hennig, Philipp},
+    title = {{Computation-Aware Kalman Filtering and Smoothing}},
+    editor = {Li, Yingzhen and Mandt, Stephan and Agrawal, Shipra and Khan, Emtiyaz},
+    booktitle = {Proceedings of the 28th International Conference on Artificial Intelligence and Statistics (AISTATS)},
+    volume = {258},
+    series = {Proceedings of Machine Learning Research},
+    pages = {2071--2079},
+    publisher = {PMLR},
+    address = {Mai Khao, Thailand},
+    year = {2025},
+    archiveprefix = {arXiv},
+    eprint = {2405.08971},
+    primaryclass = {cs.LG},
+    doi = {10.48550/arxiv.2405.08971},
+    url = {https://proceedings.mlr.press/v258/pfortner25a.html},
+}
+
+@article{Kernel-Vector-Valued-2012,
+    author = {\'{A}lvarez, Mauricio A. and Rosasco, Lorenzo and Lawrence, Neil D.},
+    title = {{Kernels for Vector-Valued Functions: A Review}},
+    journal = {Foundations and Trends in Machine Learning},
+    volume = {4},
+    number = {3},
+    pages = {195-266},
+    year = {2012},
+    month = {06},
+    abstract = {Kernel methods are among the most popular techniques in machine learning. From a regularization perspective they play a central role in regularization theory as they provide a natural choice for the hypotheses space and the regularization functional through the notion of reproducing kernel Hilbert spaces. From a probabilistic perspective they are the key in the context of Gaussian processes, where the kernel function is known as the covariance function. Traditionally, kernel methods have been used in supervised learning problems with scalar outputs and indeed there has been a considerable amount of work devoted to designing and learning kernels. More recently there has been an increasing interest in methods that deal with multiple outputs, motivated partially by frameworks like multitask learning. In this monograph, we review different methods to design or learn valid kernel functions for multiple outputs, paying particular attention to the connection between probabilistic and functional methods.},
+    issn = {1935-8237},
+    doi = {10.1561/2200000036},
+    url = {https://doi.org/10.1561/2200000036},
+    eprint = {https://www.emerald.com/ftmal/article-pdf/4/3/195/11147420/2200000036en.pdf},
+}
+
+@article{Zhang-Efficient-GP-2023,
+    title = {{An efficient implementation for spatial–temporal Gaussian process regression and its applications}},
+    journal = {Automatica},
+    volume = {147},
+    pages = {110679},
+    year = {2023},
+    issn = {0005-1098},
+    doi = {https://doi.org/10.1016/j.automatica.2022.110679},
+    url = {https://www.sciencedirect.com/science/article/pii/S000510982200543X},
+    author = {Junpeng Zhang and Yue Ju and Biqiang Mu and Renxin Zhong and Tianshi Chen},
+    keywords = {Large scale spatial–temporal data, Gaussian process regression, Kalman filter and smoother},
+    abstract = {Spatial–temporal Gaussian process regression is a popular method for spatial–temporal data modeling. Its state-of-art implementation is based on the state-space model realization of the spatial–temporal Gaussian process and its corresponding Kalman filter and smoother, and has computational complexity O(NM3), where N and M are the number of time instants and spatial input locations, respectively, and thus can only be applied to data with large N but relatively small M. In this paper, our primary goal is to show that by exploring the Kronecker structure of the state-space model realization of the spatial–temporal Gaussian process, it is possible to further reduce the computational complexity to O(M3+NM2) and thus the proposed implementation can be applied to data with large N and moderately large M. The proposed implementation is illustrated over applications in weather data prediction and spatially-distributed system identification. Our secondary goal is to design a kernel for both the Colorado precipitation data and the GHCN temperature data, such that while having more efficient implementation, better prediction performance can also be achieved than the state-of-art result.}
+}
+
+@inproceedings{Dependent-GP-2004,
+    author = {Boyle, Phillip and Frean, Marcus},
+    booktitle = {Advances in Neural Information Processing Systems},
+    editor = {L. Saul and Y. Weiss and L. Bottou},
+    pages = {},
+    publisher = {MIT Press},
+    title = {{Dependent Gaussian Processes}},
+    url = {https://proceedings.neurips.cc/paper_files/paper/2004/file/59eb5dd36914c29b299c84b7ddaf08ec-Paper.pdf},
+    volume = {17},
+    year = {2004}
+}
+
+@inproceedings{Multitask-GP-2007,
+    author = {Bonilla, Edwin and Chai, Kian and Williams, Christopher},
+    booktitle = {Advances in Neural Information Processing Systems},
+    editor = {J. Platt and D. Koller and Y. Singer and S. Roweis},
+    pages = {},
+    publisher = {Curran Associates, Inc.},
+    title = {{Multi-task Gaussian Process Prediction}},
+    url = {https://proceedings.neurips.cc/paper_files/paper/2007/file/66368270ffd51418ec58bd793f2d9b1b-Paper.pdf},
+    volume = {20},
+    year = {2007}
+}
+
+@article{Meta-Kriging-2018,
+    author = {Rajarshi Guhaniyogi and Sudipto Banerjee},
+    title = {{Meta-Kriging: Scalable Bayesian Modeling and Inference for Massive Spatial Datasets}},
+    journal = {Technometrics},
+    volume = {60},
+    number = {4},
+    pages = {430--444},
+    year = {2018},
+    publisher = {Taylor \& Francis},
+    doi = {10.1080/00401706.2018.1437474},
+    note ={PMID: 31007296},
+    URL = {https://doi.org/10.1080/00401706.2018.1437474},
+    eprint = {https://doi.org/10.1080/00401706.2018.1437474}
+}
+
+@article{Huang-Nonstationary-2025,
+    author = {Huang Huang and Lewis R. Blake and Matthias Katzfuss and Dorit M. Hammerling},
+    title = {Nonstationary Spatial Modeling of Massive Global Satellite Data},
+    journal = {Journal of Computational and Graphical Statistics},
+    volume = {34},
+    number = {4},
+    pages = {1226--1239},
+    year = {2025},
+    publisher = {Taylor \& Francis},
+    doi = {10.1080/10618600.2024.2441986},
+    URL = {https://doi.org/10.1080/10618600.2024.2441986},
+    eprint = {https://doi.org/10.1080/10618600.2024.2441986} 
+}
+
+@Article{Ferreira-Multivariate-Kalman-2022,
+    author={Ferreira, Guillermo and Mateu, Jorge and Porcu, Emilio},
+    title={{Multivariate Kalman filtering for spatio-temporal processes}},
+    journal={Stochastic Environmental Research and Risk Assessment},
+    year={2022},
+    month={Dec},
+    day={01},
+    volume={36},
+    number={12},
+    pages={4337-4354},
+    abstract={An increasing interest in models for multivariate spatio-temporal processes has been noted in the last years. Some of these models are very flexible and can capture both marginal and cross spatial associations amongst the components of the multivariate process. In order to contribute to the statistical analysis of these models, this paper deals with the estimation and prediction of multivariate spatio-temporal processes by using multivariate state-space models. In this context, a multivariate spatio-temporal process is represented through the well-known Wold decomposition. Such an approach allows for an easy implementation of the Kalman filter to estimate linear temporal processes exhibiting both short and long range dependencies, together with a spatial correlation structure. We illustrate, through simulation experiments, that our method offers a good balance between statistical efficiency and computational complexity. Finally, we apply the method for the analysis of a bivariate dataset on average daily temperatures and maximum daily solar radiations from 21 meteorological stations located in a portion of south-central Chile.},
+    issn={1436-3259},
+    doi={10.1007/s00477-022-02266-3},
+    url={https://doi.org/10.1007/s00477-022-02266-3}
+}
+
+@INPROCEEDINGS{Salari-GP-Turbines-2025,
+  author={Salari, Azam and Zeinali, Mahdi},
+  booktitle={2025 15th Smart Grid Conference (SGC)}, 
+  title={{Kalman-Enhanced Dynamic Spatiotemporal Gaussian Process Regression for Real-Time Wind Turbine Power Estimation}}, 
+  year={2025},
+  month={12},
+  volume={},
+  number={},
+  pages={1-4},
+  keywords={Filtering;Estimation;Gaussian processes;Real-time systems;Wind turbines;Spatiotemporal phenomena;State-space methods;Kalman filters;Kernel;Standards;Gaussian Process Regression;Kalman Filtering;Spatiotemporal Estimation;Wind Turbine Power;Machine Learning},
+  doi={10.1109/SGC69320.2025.11372395}
+}
+
+@ARTICLE{Cressie-Origins-1990,
+	author = {Cressie, Noel},
+	title = {{The origins of kriging}},
+	year = {1990},
+    month = {4},
+	journal = {Mathematical Geology},
+	volume = {22},
+	number = {3},
+	pages = {239 - 252},
+	doi = {10.1007/BF00889887},
+	url = {https://doi.org/10.1007/BF00889887}
+}

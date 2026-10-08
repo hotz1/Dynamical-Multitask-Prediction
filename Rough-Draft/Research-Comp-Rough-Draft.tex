@@ -1,22 +1,24 @@
-\documentclass{article}
+\documentclass[10pt]{article}
 % \usepackage[utf8]{inputenc}
+
 % \usepackage[a4paper, total={6in, 8in}, margin = 3cm]{geometry}
+% \usepackage[total={6in,8in}, margin = 3cm]{geometry}
 \usepackage[a4paper, margin = 3cm]{geometry}
+
 \usepackage[english]{babel}
 \usepackage{authblk}
 \usepackage{enumerate, enumitem}
-\usepackage{mathtools}
-\usepackage{amssymb}
-\usepackage{amsmath}
 \usepackage{setspace}
 \usepackage{natbib}
+\usepackage{parskip}
 
-% \input{../tex-macros/general-typeset.tex}
 \input{../tex-macros/math-macros.tex}
 \input{../tex-macros/math-alphabets-ams.tex}
 
-\newtheorem{theorem}{Theorem}[section]
-\newtheorem{definition}{Definition}[section]
+% \newtheorem{theorem}{Theorem}[section]
+% \newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
 
 \usepackage{hyperref}
 \usepackage[nameinlink]{cleveref}
@@ -34,6 +36,9 @@
     citecolor = citeBlue,
     urlcolor = urlBlue
 }
+
+\usepackage{tocloft}
+\tocloftpagestyle{empty}
 
 \newcommand{\PM}[1]{\textrm{PM}_{#1}}
 \newcommand{\calGP}{\mathcal{GP}}
@@ -72,59 +77,133 @@
 \begin{document}
 
 \maketitle
+\thispagestyle{empty}
 
 \begin{abstract}
-    The abstract is here, which should have no citations/reference.
+    Over the past decade, several groups of machine learning researchers have demonstrated promising computational algorithms and mathematical results which utilize Gaussian process (GP) regression and Kalman filtering (KF) to derive estimates and predictions for the future states of spatiotemporal dynamical systems in a more computationally-efficient manner.
+    
+    This paper builds on previous results in this research area by adapting and extending the results of previous work on univariate outputs towards dynamical systems with vector-valued outputs. In this paper, we introduce the mathematical background necessary to understand Gaussian processes and Kalman filtering, and cover prior results in these areas. We then formally describe the multi-output spatiotemporal dynamics problem, and depict the assumptions required for similar computational speedups to exist in the multi-output spatiotemporal dynamics setting. Lastly, we apply these algorithms to both synthetic and real-world datasets to evaluate their performance.
 \end{abstract}
 
-\bigskip
+% \bigskip
+\clearpage
 
 \tableofcontents
 
 \newpage
 
+\setcounter{page}{1}
+
 \section{Introduction}
 \label{sec:intro}
 
-In the paper \emph{Efficient spatio-temporal Gaussian regression via Kalman filtering} by \citet*{Todescato-Efficient-2020}, the authors introduce a new methodology for estimating the future states of a spatio-temporal dynamical system.
+Gaussian processes (GPs) are an `industry standard' procedure for modelling the values of unknown functions, especially in scenarios where there are noisy or otherwise unreliable measurements and/or correlations in the data which must be accounted for \citep{GPML-Book-2006}. 
 
-The method which the authors propose in this paper utilizes a combination of Gaussian process regression and Kalman filtering methods to account for the spatial and temporal aspects which guide the `evolution' of the dynamical system of interest.
+Gaussian process regression, also commonly referred to in the literature as \emph{kriging} after the South African geostatistician Danie G. Krige \citep{Cressie-Origins-1990}, is a statistical modelling procedure wherein a finite collection of observations are used for learning the form of an unknown real-valued function. Gaussian processes are particularly useful when there are correlations among observations, as these models can leverage information from correlated data to reduce the variance of outputs in the estimated function. Furthermore, the equations for fitting a GP to a dataset have computable closed-form solutions. Due to these convenient properties, Gaussian processes are frequently used in a variety of practical statistical applications involving spatiotemporal datasets, ranging from geostatistics and climatology to fields such as electrical engineering and signal processing \citep{Sarkka-Spatial-Kalman-2012,Huang-Nonstationary-2025}.
 
+Although Gaussian processes are mathematically tractable and convenient to use, there is one major drawback to these models: exact inference with Gaussian processes has a cubically-scaling computational overhead. Fitting a Gaussian process on a set of $N$ observations is a process which requires $\calO(N^{3})$ operations \citep{GPML-Book-2006}, making these regression problems infeasible for many large-scale datasets \citep{Guhaniyogi-Meta-Kriging-2018,Pfoertner-Comp-Aware-2025,Salari-GP-Turbines-2025}.
 
+Due to these computational difficulties, many statisticians and machine learning researchers have sought to develop algorithms for fitting a Gaussian process with reduced computational overhead. Prominent well-studied and broadly applicable methods for accomplishing this task include approximations using induced latent variables \citep{Quinonero-Sparse-GP-2005}, sparse variational Gaussian processes \citep{Titsias-SVGP-2009}, and Vecchia approximations \citep{Katzfuss-Vecchia-2021}. However, these methods all require some degree of approximation, trading the exactness of a solution for increased algorithmic efficiency. 
 
+In their 2020 paper \emph{Efficient spatio-temporal Gaussian regression via Kalman filtering}, \citeauthor{Todescato-Efficient-2020} introduce a new algorithm for efficiently deriving estimates of the future states in a spatio-temporal dynamical system under certain assumptions for the covariance structure between observations. The algorithm proposed by the authors utilizes Gaussian process regression in tandem with the Kalman filter, providing the ability to account for both the spatial and temporal aspects which guide the `evolution' of the dynamical system while simultaneously reducing the overall computational load. 
+
+This project gives a detailed overview and subsequently builds upon the results in \citet{Todescato-Efficient-2020} by extending their proposed algorithm to operate with vector-valued outputs instead of being confined to scalar responses. This alteration provides many practical benefits, as there are many scientific research areas which utilize spatiotemporal models for multiple correlated responses.
 
 \section{Background}
 \label{sec:background}
 
+In order to properly describe the algorithm devised by \citet{Todescato-Efficient-2020}, we must first separately discuss Gaussian processes and Kalman filtering.
+
 \subsection{Gaussian Processes}
 
-A Gaussian process (GP) is a real-valued stochastic process indexed over some $D$-dimensional \emph{state space} $\calX \subseteq \bbR^{D}$ which satisfies the following key property:
+A Gaussian process (GP) is a real-valued stochastic process indexed over some $P$-dimensional \emph{state space} $\calX \subseteq \bbR^{P}$ which satisfies the following key property:
 
 \begin{definition}[Gaussian Process]
 \label{def:GP}
-    $f$ is a Gaussian process on $\calX$ if for every finite collection ($N$-tuple) of states $(x_{1}, \cdots, x_{N}) \subset \calX$, the joint distribution of the random vector $\big(f(x_{1}), \cdots, f(x_{N})\big)$ is a multivariate Gaussian distribution on $\bbR^{N}$. 
+    The real-valued function $f: \calX \to \bbR$ follows a Gaussian process on $\calX$ if for every finite collection ($N$-tuple) of states $\{\bfx_{1}, \cdots, \bfx_{N}\} \subset \calX$, the joint distribution of the random vector $\big(f(\bfx_{1}), \cdots, f(\bfx_{N})\big)^{\sfTsmall}$ is a multivariate Gaussian distribution on $\bbR^{N}$. 
 \end{definition}
 
-Furthermore, every Gaussian process on the state space $\calX$ is fully specified by two real-valued functions on $\calX$, which respectively describe the mean and covariance of the underlying process \citep{GPML-Book-2006}. Formally, every Gaussian process defined on the underlying state space $\calX$ is \emph{uniquely} described by a mean function $\mu: \calX \to \bbR$ and a covariance (kernel) function $K: \calX \times \calX \to \bbR$ which provide the following structure:
-\begin{itemize}
-    \item \textbf{Mean:} $\mu(x) = \expec{Y(x)}$ for all $x \in \calX$. 
-    \item \textbf{Covariance:} $K(x, x') = \covar{Y(x)}{Y(x')}$ for all $(x, x') \in \calX \times \calX$.
-\end{itemize}
-As every Gaussian process on $\calX$ is uniquely determined by these two functions, a Gaussian process $f$ on $\calX$ is commonly denoted by $f \sim \calGP(\mu, K)$, where $\mu$ and $K$ are real-valued functions as defined above.
+Furthermore, every Gaussian process on the state space $\calX$ is \emph{uniquely} specified by two real-valued functions: a mean function $m: \calX \to \bbR$ and a \emph{positive-definite} covariance (kernel) function $k: \calX \times \calX \to \bbR^{\ge 0}$, which respectively describe the mean and covariance of the underlying process \citep{GPML-Book-2006}. Any function $f: \calX \to \bbR$ which is a realization of a Gaussian process with mean $m(\cdot)$ and kernel $k(\cdot, \cdot)$ is endowed with the following structure:
+\begin{subequations}
+    \label{eq:GP-prior}
+    \begin{align}
+        \textbf{Mean:} \quad & m(\bfx) = \expec{f(\bfx)}\; \textrm{for all}\; \bfx \in \calX\label{eq:GP-prior-mean}\\[6pt]
+        \textbf{Covariance:} \quad & k(\bfx, \bfx') = \covar{f(\bfx)}{f(\bfx')}\; \textrm{for all}\;(\bfx, \bfx') \in \calX \times \calX\label{eq:GP-prior-kernel}
+    \end{align}
+\end{subequations}
+We denote a function $f: \calX \to \bbR$ which is drawn from a Gaussian process with mean $m(\cdot)$ and kernel $k(\cdot, \cdot)$ as $f \sim \calGP(m, k)$. Note that the kernel function $k(\cdot, \cdot)$ in \Cref{eq:GP-prior-kernel} must be symmetric in its arguments, as this function describes the covariance between the Gaussian process outputs at these two locations. In a Bayesian setting, the structure of a Gaussian process makes these models highly suitable for use as a prior distribution on a space of real-valued functions \citep{Titsias-SVGP-2009,Alvarez-Vector-Kernels-2012}, as the Gaussian distribution is a conjugate prior which yields a Gaussian posterior distribution.
 
-Due to these convenient properties, Gaussian processes are frequently used in a variety of practical statistical applications, ranging from geostatistics and climatology to fields such as electrical engineering and signal processing \citep{Sarkka-Spatial-Kalman-2012,Huang-Nonstationary-2025}. Gaussian process regression, also commonly referred to in the literature as \emph{kriging} after the South African geostatistician Danie G. Krige \citep{Cressie-Origins-1990,Meta-Kriging-2018}, is a semi-parametric statistical modelling procedure wherein a finite collection of observations are used for learning the outputs of an unknown function defined on the state space $\calX$. 
+Suppose that $f \sim \calGP(m, k)$ is a realization of some Gaussian process on $\calX \subseteq \bbR^{P}$, and let $\{\bfx_{1}, \dots, \bfx_{N}\} \subset \calX$ be a set of queried locations. Define the data matrix $\bfX := \begin{bsmallmatrix}
+    \bfx_{1}^{\scriptscriptstyle{\sfT}} &
+    \cdots &
+    \bfx_{N}^{\scriptscriptstyle{\sfT}}
+\end{bsmallmatrix}^{\sfTsmall} \in \bbR^{N \times P}$, and define the corresponding vectors $f(\bfX) := \begin{bsmallmatrix}
+    f(\bfx_{1}^{\scriptscriptstyle{\sfT}}) &
+    \cdots &
+    f(\bfx_{N}^{\scriptscriptstyle{\sfT}})
+\end{bsmallmatrix}^{\sfTsmall} \in \bbR^{N}$ and $m(\bfX) := \begin{bsmallmatrix}
+    m(\bfx_{1}^{\scriptscriptstyle{\sfT}}) &
+    \cdots &
+    m(\bfx_{N}^{\scriptscriptstyle{\sfT}})
+\end{bsmallmatrix}^{\sfTsmall} \in \bbR^{N}$. Lastly, let $k(\bfX, \bfX) \in \bbR^{N \times N}$ represent the \emph{Gram matrix} induced by the kernel $k(\cdot, \cdot)$:
+\begin{equation}
+\label{eq:GP-gram-matrix}
+    k(\bfX, \bfX) := \begin{bmatrix}
+        k(\bfx_{1}, \bfx_{1}) & k(\bfx_{1}, \bfx_{2}) & \cdots & k(\bfx_{1}, \bfx_{n})\\
+        k(\bfx_{2}, \bfx_{1}) & k(\bfx_{2}, \bfx_{2}) & \cdots & k(\bfx_{2}, \bfx_{n})\\
+        \vdots & \vdots & \ddots & \vdots\\
+        k(\bfx_{n}, \bfx_{1}) & k(\bfx_{n}, \bfx_{2}) & \cdots & k(\bfx_{n}, \bfx_{n})
+    \end{bmatrix}
+\end{equation}
+One of the key properties which allows Gaussian processes to be so widely-applicable is that under the conditions described above, the vector $f(\bfX)$ follows a multivariate Gaussian distribution:
+\begin{equation}
+\label{eq:GP-fun-distribution}
+    f(\bfX) \sim \calN\Big(m(\bfX), k(\bfX, \bfX)\Big)
+\end{equation}
+Furthermore, consider the same setting as above, and suppose that we have some (potentially) noisy measured observations given by $y_{i} = f(\bfx_{i}) + \varepsilon_{i}$, for independent normally-distributed measurement errors $\varepsilon_{1}, \dots, \varepsilon_{N} \simiid \calN(0, \sigma^2)$. Equivalently, $y_{i} \sim \calN\big(f(\bfx_{i}), \sigma^{2}\big)$ for each queried location $\bfx_{i}$ \citep{GPML-Book-2006}. Defining the response vector $\bfy := \begin{bsmallmatrix}
+    y_{1}^{\phantom{{\scriptscriptstyle{\sfT}}}} &
+    \cdots &
+    y_{N}^{\phantom{{\scriptscriptstyle{\sfT}}}}
+\end{bsmallmatrix}^{\sfTsmall} \in \bbR^{N}$ yields the following distributional result:
+\begin{equation}
+\label{eq:GP-obs-distribution}
+    \bfy \sim \calN\Big(m(\bfX), k(\bfX, \bfX) + \sigma^{2}\bfI\Big)
+\end{equation}
+In a Bayesian context, one can use a Gaussian process as a prior on the space of real-valued functions on $\calX$. If observations are measured with normally-distributed measurement error, then the posterior predictive distribution for the function can be described by a Gaussian process with a similar, but altered, mean and kernel. In particular, for a data matrix $\bfX \in \bbR^{N \times P}$ with the response vector $\bfy \in \bbR^{N}$, the posterior predictive distribution for $f$ evaluated at any points $\bfx, \bfx' \in \calX$ is given by the following:
+\begin{subequations}
+    \label{eq:GP-posterior}
+    \begin{align}
+        \textbf{Mean:} \quad & m_{\textrm{post}}(\bfx) = m(\bfx) + k(\bfx, \bfX)\big[k(\bfX, \bfX) + \sigma^{2}\bfI\big]^{-1}\big(\bfy - m(\bfX)\big)\label{eq:GP-post-mean}\\[6pt]
+        \textbf{Kernel:} \quad & k_{\textrm{post}}(\bfx, \bfx') = k(\bfx, \bfx') - k(\bfx, \bfX)\big[k(\bfX, \bfX) + \sigma^{2}\bfI\big]^{-1}k(\bfX, \bfx')\label{eq:GP-post-kernel}
+    \end{align}
+\end{subequations}
+Note that if the observations $y_{1}, \dots, y_{N}$ are known to be exact (i.e. $\sigma^2 = 0$), then \Cref{eq:GP-post-mean,eq:GP-post-kernel} will perfectly interpolate every observation. To be precise, for any queried point $\bfx_{i}$, we will have that $m_{\textrm{post}}(\bfx_{i}) = y_{i}$ and $k_{\textrm{post}}(\bfx_{i}, \bfx_{i}) = 0$, implying that the posterior is a deterministic value at that location. This property holds if and only if $\sigma^{2}$ is identically zero. 
+
+% \begin{definition}[Reproducing Kernel Hilbert Space]
+%     Let $\calH$ be a vector space of real-valued functions $f: \calX \to \bbR$ for some indexing set $\calX$. 
+% \end{definition}
+
+% \begin{theorem}[Representer Theorem]
+%     \phantom{Hi}
+% \end{theorem}
+
+
+\subsection{Multi-Output Gaussian Processes}
+Thus far, we have focused solely on the description of single-output Gaussian processes, whose realizations are described by functions of the form $f: \calX \to \bbR$. However, there is a natural extension from these univariate processes to \emph{multi-output} (also called \emph{multi-task}) Gaussian processes: a higher-dimensional form of a Gaussian process, whose outputs are vectors in $\bbR^{D}$ \citep{Alvarez-Vector-Kernels-2012,Bonilla-Multitask-GP-2007}.
 
 
 \subsection{Kalman Filtering}
 
-The Kalman filter (KF), first introduced by and named eponymously for Rudolf E. K\'{a}lm\'{a}n \citeyearpar{Kalman-Filter-1960}, is a technique for 
+The Kalman filter (KF), first introduced by and eponymously named for Rudolf E. K\'{a}lm\'{a}n \citeyearpar{Kalman-Filter-1960}, is a technique for 
 
 \section{Problem Formulation}
 \label{sec:problem}
 
-% \subsection{Dynamical Gaussian Processes}
+In 
 
-% As described by \Citet*{Todescato-Efficient-2020} and \Citeauthor{van-Hulst-Dynamic-GP-2024}
+\begin{definition}[Power Spectrum Density]
+
+\end{definition}
 
 \section{Methods}
 \label{sec:methods}

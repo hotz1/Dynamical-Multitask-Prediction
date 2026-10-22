@@ -10,15 +10,16 @@
 \usepackage{enumerate, enumitem}
 \usepackage{setspace}
 \usepackage{natbib}
-\usepackage{parskip}
+% \usepackage{parskip}
 
 \input{../tex-macros/math-macros.tex}
 \input{../tex-macros/math-alphabets-ams.tex}
 
-% \newtheorem{theorem}{Theorem}[section]
-% \newtheorem{definition}{Definition}[section]
-\newtheorem{theorem}{Theorem}
-\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}{Definition}[section]
+\numberwithin{equation}{section}
+% \newtheorem{theorem}{Theorem}
+% \newtheorem{definition}{Definition}
 
 \usepackage{hyperref}
 \usepackage[nameinlink]{cleveref}
@@ -42,6 +43,7 @@
 
 \newcommand{\PM}[1]{\textrm{PM}_{#1}}
 \newcommand{\calGP}{\mathcal{GP}}
+\DeclareMathOperator{\vect}{vec}
 
 \title{\textbf{Computationally Efficient Predictions for Multi-Output Spatiotemporal Dynamical Systems}} % put your fancy title here
 
@@ -50,6 +52,8 @@
     \large
     \vspace{0.5cm}
     Supervisor: Dr. Meredith Franklin \\ % names of your almighty supervisors
+
+    Examiners: Dr. Ricardo Baptista \& Dr. Joshua Speagle
 
     \vspace{0.5cm}
     Department of Statistical Sciences \\
@@ -107,7 +111,7 @@ Due to these computational difficulties, many statisticians and machine learning
 
 In their 2020 paper \emph{Efficient spatio-temporal Gaussian regression via Kalman filtering}, \citeauthor{Todescato-Efficient-2020} introduce a new algorithm for efficiently deriving estimates of the future states in a spatio-temporal dynamical system under certain assumptions for the covariance structure between observations. The algorithm proposed by the authors utilizes Gaussian process regression in tandem with the Kalman filter, providing the ability to account for both the spatial and temporal aspects which guide the `evolution' of the dynamical system while simultaneously reducing the overall computational load. 
 
-This project gives a detailed overview and subsequently builds upon the results in \citet{Todescato-Efficient-2020} by extending their proposed algorithm to operate with vector-valued outputs instead of being confined to scalar responses. This alteration provides many practical benefits, as there are many scientific research areas which utilize spatiotemporal models for multiple correlated responses.
+This paper provides a detailed overview of the results in \citet{Todescato-Efficient-2020} and subsequently builds upon the scaffolding in the authors' work by amending their proposed algorithm to operate with vector-valued outputs instead of being confined to scalar responses. This extension to multivariate response vectors provides many practical benefits, as there are many scientific research areas which utilize spatiotemporal models to account for the relationships between a set of correlated response variables.
 
 \section{Background}
 \label{sec:background}
@@ -115,6 +119,7 @@ This project gives a detailed overview and subsequently builds upon the results 
 In order to properly describe the algorithm devised by \citet{Todescato-Efficient-2020}, we must first separately discuss Gaussian processes and Kalman filtering.
 
 \subsection{Gaussian Processes}
+\label{subsec:intro-GP}
 
 A Gaussian process (GP) is a real-valued stochastic process indexed over some $P$-dimensional \emph{state space} $\calX \subseteq \bbR^{P}$ which satisfies the following key property:
 
@@ -131,9 +136,9 @@ Furthermore, every Gaussian process on the state space $\calX$ is \emph{uniquely
         \textbf{Covariance:} \quad & k(\bfx, \bfx') = \covar{f(\bfx)}{f(\bfx')}\; \textrm{for all}\;(\bfx, \bfx') \in \calX \times \calX\label{eq:GP-prior-kernel}
     \end{align}
 \end{subequations}
-We denote a function $f: \calX \to \bbR$ which is drawn from a Gaussian process with mean $m(\cdot)$ and kernel $k(\cdot, \cdot)$ as $f \sim \calGP(m, k)$. Note that the kernel function $k(\cdot, \cdot)$ in \Cref{eq:GP-prior-kernel} must be symmetric in its arguments, as this function describes the covariance between the Gaussian process outputs at these two locations. In a Bayesian setting, the structure of a Gaussian process makes these models highly suitable for use as a prior distribution on a space of real-valued functions \citep{Titsias-SVGP-2009,Alvarez-Vector-Kernels-2012}, as the Gaussian distribution is a conjugate prior which yields a Gaussian posterior distribution.
+We denote a function $f: \calX \to \bbR$ which is drawn from a Gaussian process with mean $m(\cdot)$ and kernel $k(\cdot, \cdot)$ as $f \sim \calGP(m, k)$. Note that the kernel function $k(\cdot, \cdot)$ in \Cref{eq:GP-prior-kernel} must be symmetric in its arguments, as this function describes the covariance between the Gaussian process outputs at these two locations. In addition to describing the covariance between function observations, the kernel function $k(\cdot, \cdot)$ serves another complementary purpose, as sample paths have continuous mean-square derivatives up to the order of the kernel $k(\cdot, x)$ \citep{GPML-Book-2006}.
 
-Suppose that $f \sim \calGP(m, k)$ is a realization of some Gaussian process on $\calX \subseteq \bbR^{P}$, and let $\{\bfx_{1}, \dots, \bfx_{N}\} \subset \calX$ be a set of queried locations. Define the data matrix $\bfX := \begin{bsmallmatrix}
+Suppose that $f \sim \calGP(m, k)$ is a realization of some Gaussian process on $\calX \subseteq \bbR^{P}$, and let $\{\bfx_{1}, \dots, \bfx_{N}\} \subset \calX$ be a set of queried locations. For ease of notation, we define the data matrix $\bfX := \begin{bsmallmatrix}
     \bfx_{1}^{\scriptscriptstyle{\sfT}} &
     \cdots &
     \bfx_{N}^{\scriptscriptstyle{\sfT}}
@@ -145,14 +150,14 @@ Suppose that $f \sim \calGP(m, k)$ is a realization of some Gaussian process on 
     m(\bfx_{1}^{\scriptscriptstyle{\sfT}}) &
     \cdots &
     m(\bfx_{N}^{\scriptscriptstyle{\sfT}})
-\end{bsmallmatrix}^{\sfTsmall} \in \bbR^{N}$. Lastly, let $k(\bfX, \bfX) \in \bbR^{N \times N}$ represent the \emph{Gram matrix} induced by the kernel $k(\cdot, \cdot)$:
+\end{bsmallmatrix}^{\sfTsmall} \in \bbR^{N}$. Lastly, let $k(\bfX, \bfX) \in \bbR^{N \times N}$ represent the \emph{Gram matrix} for the observed locations which is induced by the kernel $k(\cdot, \cdot)$:
 \begin{equation}
 \label{eq:GP-gram-matrix}
     k(\bfX, \bfX) := \begin{bmatrix}
-        k(\bfx_{1}, \bfx_{1}) & k(\bfx_{1}, \bfx_{2}) & \cdots & k(\bfx_{1}, \bfx_{n})\\
-        k(\bfx_{2}, \bfx_{1}) & k(\bfx_{2}, \bfx_{2}) & \cdots & k(\bfx_{2}, \bfx_{n})\\
+        k(\bfx_{1}, \bfx_{1}) & k(\bfx_{1}, \bfx_{2}) & \cdots & k(\bfx_{1}, \bfx_{N})\\
+        k(\bfx_{2}, \bfx_{1}) & k(\bfx_{2}, \bfx_{2}) & \cdots & k(\bfx_{2}, \bfx_{N})\\
         \vdots & \vdots & \ddots & \vdots\\
-        k(\bfx_{n}, \bfx_{1}) & k(\bfx_{n}, \bfx_{2}) & \cdots & k(\bfx_{n}, \bfx_{n})
+        k(\bfx_{N}, \bfx_{1}) & k(\bfx_{N}, \bfx_{2}) & \cdots & k(\bfx_{N}, \bfx_{N})
     \end{bmatrix}
 \end{equation}
 One of the key properties which allows Gaussian processes to be so widely-applicable is that under the conditions described above, the vector $f(\bfX)$ follows a multivariate Gaussian distribution:
@@ -160,49 +165,382 @@ One of the key properties which allows Gaussian processes to be so widely-applic
 \label{eq:GP-fun-distribution}
     f(\bfX) \sim \calN\Big(m(\bfX), k(\bfX, \bfX)\Big)
 \end{equation}
-Furthermore, consider the same setting as above, and suppose that we have some (potentially) noisy measured observations given by $y_{i} = f(\bfx_{i}) + \varepsilon_{i}$, for independent normally-distributed measurement errors $\varepsilon_{1}, \dots, \varepsilon_{N} \simiid \calN(0, \sigma^2)$. Equivalently, $y_{i} \sim \calN\big(f(\bfx_{i}), \sigma^{2}\big)$ for each queried location $\bfx_{i}$ \citep{GPML-Book-2006}. Defining the response vector $\bfy := \begin{bsmallmatrix}
+Furthermore, consider the same setting as above, and suppose that we have some (potentially) noisy measured observations given by $y_{i} = f(\bfx_{i}) + \epsilon_{i}$, for independent normally-distributed measurement errors $\epsilon_{1}, \dots, \epsilon_{N} \simiid \calN(0, \sigma^2)$. Equivalently, we assume that $y_{i} \sim \calN\big(f(\bfx_{i}), \sigma^{2}\big)$ for each queried location $\bfx_{i}$ \citep{GPML-Book-2006}. Defining the response vector $\bfy := \begin{bsmallmatrix}
     y_{1}^{\phantom{{\scriptscriptstyle{\sfT}}}} &
     \cdots &
     y_{N}^{\phantom{{\scriptscriptstyle{\sfT}}}}
 \end{bsmallmatrix}^{\sfTsmall} \in \bbR^{N}$ yields the following distributional result:
 \begin{equation}
 \label{eq:GP-obs-distribution}
-    \bfy \sim \calN\Big(m(\bfX), k(\bfX, \bfX) + \sigma^{2}\bfI\Big)
+    \bfy \sim \calN\Big(m(\bfX), k(\bfX, \bfX) + \sigma^{2}\bfI_{N}\Big)
 \end{equation}
-In a Bayesian context, one can use a Gaussian process as a prior on the space of real-valued functions on $\calX$. If observations are measured with normally-distributed measurement error, then the posterior predictive distribution for the function can be described by a Gaussian process with a similar, but altered, mean and kernel. In particular, for a data matrix $\bfX \in \bbR^{N \times P}$ with the response vector $\bfy \in \bbR^{N}$, the posterior predictive distribution for $f$ evaluated at any points $\bfx, \bfx' \in \calX$ is given by the following:
+Gaussian processes are often incorporated in a Bayesian setting as a prior distribution which one can place on the space of real-valued functions on $\calX$ \citep{Titsias-SVGP-2009,Alvarez-Vector-Kernels-2012}. For example, for a \emph{black-box} function $f: \calX \to \bbR$, we may place a prior of the form $f \sim \calGP(m, k)$, for specified functions $m: \calX \to \bbR$ and $k: \calX \times \calX \to \bbR$ as described by \Cref{eq:GP-prior-mean,eq:GP-prior-kernel}. If observations of the black-box function $f(\cdot)$ are taken with normally-distributed measurement error (as described by \Cref{eq:GP-obs-distribution}), then the posterior predictive distribution for $f(\cdot)$ will be a Gaussian process whose mean and kernel are altered by conditioning on the observed data. In particular, for a data matrix $\bfX \in \bbR^{N \times P}$ with the response vector $\bfy \in \bbR^{N}$, the posterior predictive distribution for $f$ evaluated at any points $\bfx, \bfx' \in \calX$ is given by the following:
 \begin{subequations}
     \label{eq:GP-posterior}
     \begin{align}
-        \textbf{Mean:} \quad & m_{\textrm{post}}(\bfx) = m(\bfx) + k(\bfx, \bfX)\big[k(\bfX, \bfX) + \sigma^{2}\bfI\big]^{-1}\big(\bfy - m(\bfX)\big)\label{eq:GP-post-mean}\\[6pt]
-        \textbf{Kernel:} \quad & k_{\textrm{post}}(\bfx, \bfx') = k(\bfx, \bfx') - k(\bfx, \bfX)\big[k(\bfX, \bfX) + \sigma^{2}\bfI\big]^{-1}k(\bfX, \bfx')\label{eq:GP-post-kernel}
+        \textbf{Mean:} \quad & m_{\textrm{post}}(\bfx) = m(\bfx) + k(\bfx, \bfX)\big[k(\bfX, \bfX) + \sigma^{2}\bfI_{N}\big]^{-1}\big(\bfy - m(\bfX)\big)\label{eq:GP-post-mean}\\[6pt]
+        \textbf{Kernel:} \quad & k_{\textrm{post}}(\bfx, \bfx') = k(\bfx, \bfx') - k(\bfx, \bfX)\big[k(\bfX, \bfX) + \sigma^{2}\bfI_{N}\big]^{-1}k(\bfX, \bfx')\label{eq:GP-post-kernel}
     \end{align}
 \end{subequations}
-Note that if the observations $y_{1}, \dots, y_{N}$ are known to be exact (i.e. $\sigma^2 = 0$), then \Cref{eq:GP-post-mean,eq:GP-post-kernel} will perfectly interpolate every observation. To be precise, for any queried point $\bfx_{i}$, we will have that $m_{\textrm{post}}(\bfx_{i}) = y_{i}$ and $k_{\textrm{post}}(\bfx_{i}, \bfx_{i}) = 0$, implying that the posterior is a deterministic value at that location. This property holds if and only if $\sigma^{2}$ is identically zero. 
-
-% \begin{definition}[Reproducing Kernel Hilbert Space]
-%     Let $\calH$ be a vector space of real-valued functions $f: \calX \to \bbR$ for some indexing set $\calX$. 
-% \end{definition}
-
-% \begin{theorem}[Representer Theorem]
-%     \phantom{Hi}
-% \end{theorem}
-
+In the equations above, $k(\bfx, \bfX)$ represents the $1$-by-$N$ Gram matrix with entries $k(\bfx, \bfx_{i})$ and similarly, $k(\bfX, \bfx')$ is the $N$-by-1 Gram matrix with entries $k(\bfx_{i}, \bfx')$. Setting $\bfx = \bfx'$ in \Cref{eq:GP-post-kernel} yields the posterior predictive variance for $f(\bfx)$. Furthermore, when the observations $y_{1}, \dots, y_{N}$ are assumed to be exact (i.e. $\sigma^2 = 0$), then \Cref{eq:GP-post-mean,eq:GP-post-kernel} will perfectly interpolate every observation. To be precise, if $\sigma^{2} = 0$, the posterior Gaussian process satisfies that $m_{\textrm{post}}(\bfx_{i}) = y_{i}$ and $k_{\textrm{post}}(\bfx_{i}, \bfx_{i}) = 0$, implying that each $f(\bfx_{i})$ is \emph{exactly} equal to the corresponding $y_{i}$. 
 
 \subsection{Multi-Output Gaussian Processes}
-Thus far, we have focused solely on the description of single-output Gaussian processes, whose realizations are described by functions of the form $f: \calX \to \bbR$. However, there is a natural extension from these univariate processes to \emph{multi-output} (also called \emph{multi-task}) Gaussian processes: a higher-dimensional form of a Gaussian process, whose outputs are vectors in $\bbR^{D}$ \citep{Alvarez-Vector-Kernels-2012,Bonilla-Multitask-GP-2007}.
+\label{subsec:intro-MOGP}
+Thus far, we have focused solely on the description of single-output Gaussian processes, whose realizations are described by functions of the form $f: \calX \to \bbR$. However, there is a natural extension from these univariate processes to \emph{multi-output} (also called \emph{multi-task}) Gaussian processes: a higher-dimensional form of a Gaussian process, whose outputs are vectors in $\bbR^{D}$ \citep{Alvarez-Vector-Kernels-2012,Bonilla-Multitask-GP-2007}. 
 
+\begin{definition}[Multi-Output Gaussian Process]
+\label{def:MOGP}
+    The vector-valued function $\bff = (f_{1}, \dots, f_{D})^{\sfTsmall}: \calX \to \bbR^{D}$ follows a multi-output Gaussian process on $\calX$ if for every finite collection of states $\{\bfx_{1}, \dots, \bfx_{N}\} \subset \calX$, the joint distribution of the $ND$ random variables $\big(f_{1}(\bfx_{1}), \cdots, f_{D}(\bfx_{N})\big)^{\sfTsmall}$ is a multivariate Gaussian distribution on $\bbR^{ND}$.
+\end{definition}
+
+Multi-output GPs (MOGPs) are naturally applicable whenever there are several (potentially) correlated quantities which are measured over some common domain. These processes include both \emph{auto-correlations} within the same output and \emph{cross-correlations} between outputs, allowing for information about one output to reduce the uncertainty of other response variables in the model. Conceptually, a multi-output GP is analogous to simultaneously modelling $D$ single-output Gaussian processes, while also modelling the covariance between these processes.
+
+Given states $\bfX = \begin{bsmallmatrix} \bfx_{1}^{\scriptscriptstyle{\sfT}} & \cdots & \bfx_{N}^{\scriptscriptstyle{\sfT}} \end{bsmallmatrix}^{\sfTsmall} \in \bbR^{N \times P}$, we define the matrix $\bff(\bfX) \in \bbR^{N \times D}$ by concatenating the vectorized columns, i.e. $\bff(\bfX) = \begin{bsmallmatrix}f_{1}(\bfX) & \cdots & f_{D}(\bfX)\end{bsmallmatrix}$, and we can analogously define the matrix $\bfm(\bfX) \in \bbR^{N \times D}$ as a concatenation of the respective $N$-dimensional mean vectors $m_{1}(\bfX), \dots, m_{D}(\bfX)$. In order to work with a multi-output GP, we must also construct a Gram matrix $\bfK(\bfX, \bfX) \in \bbR^{ND \times ND}$ which defines the covariance structure between both the queried locations and the output dimensions. In its most general form, the Gram matrix providing the covariance for a multi-output GP has the following structure:
+\begin{equation}
+\label{eq:MOGP-gram-matrix}
+    \bfK(\bfX, \bfX) := \begin{bmatrix}
+        \bfK(\bfx_{1}, \bfx_{1}) & \bfK(\bfx_{1}, \bfx_{2}) & \cdots & \bfK(\bfx_{1}, \bfx_{N})\\
+        \bfK(\bfx_{2}, \bfx_{1}) & \bfK(\bfx_{2}, \bfx_{2}) & \cdots & \bfK(\bfx_{2}, \bfx_{N})\\
+        \vdots & \vdots & \ddots & \vdots\\
+        \bfK(\bfx_{N}, \bfx_{1}) & \bfK(\bfx_{N}, \bfx_{2}) & \cdots & \bfK(\bfx_{N}, \bfx_{N})
+    \end{bmatrix}
+\end{equation}
+The covariance matrix in \Cref{eq:MOGP-gram-matrix} is overall quite similar to the Gram matrix in the univariate setting which is shown in \Cref{eq:GP-gram-matrix}. However, the multi-output Gram matrix consists of $N^{2}$ covariance matrix sub-blocks $\bfK(\bfx_{i}, \bfx_{j}) = \covar{\bff(\bfx_{i})}{\bff(\bfx_{j})}$ of size $D \times D$, each of which has entries of the form $[\bfK(\bfx_{i}, \bfx_{j})]_{(d,d')} = \covar{f_{d}(\bfx_{i})}{f_{d'}(\bfx_{j})}$ \citep{Alvarez-Vector-Kernels-2012}. Vectorizing the matrix $\bff(\bfX)$ yields the following distributional result:
+\begin{equation}
+\label{eq:MOGP-fun-distribution}
+    \vect\!\big(\bff(\bfX)\big) \sim \calN\Big(\vect\!\big(\bfm(\bfX)\big),\, \bfK(\bfX, \bfX)\Big)
+\end{equation}
+Additionally, suppose that we have observations of the form $\bfy_{i} = \bff(\bfx_{i}) + \bfepsilon_{i}$ with independent measurement error vectors $\bfepsilon_{1}, \dots, \bfepsilon_{N} \simiid \calN(\mathbf{0}, \bfSigma_{\epsilon})$, for some positive-definite covariance matrix $\bfSigma_{\epsilon} \in \bbR^{D \times D}$. The joint distribution of these observed values is given by
+\begin{equation}
+\label{eq:MOGP-obs-distribution}
+    \vect\!\big(\bff(\bfX)\big) \sim \calN\Big(\vect\!\big(\bfm(\bfX)\big),\, \bfK(\bfX, \bfX) + \bfI_{N} \otimes \bfSigma_{\epsilon}\Big)
+\end{equation}
+Again, the full distribution in \Cref{eq:MOGP-obs-distribution} closely echoes the univariate result from \Cref{eq:GP-obs-distribution}, with a slight adjustment to account for covariances between outputs.
+
+From a purely theoretical standpoint, multi-output Gaussian processes are defined quite analogously to the single-output processes discussed in \Cref{subsec:intro-GP}. However, by solely introducing the theory and notation regarding MOGPs, we have obscured the major practical implications of these models; namely, the extreme cost for computational inference. In the (general) single-output Gaussian process regime, the cost of inference scales cubically with the size of the matrix $k(\bfX, \bfX)$, giving a computational cost of the order $\calO(N^{3})$. In the setting where the responses are vector-valued, statistical inference still requires the inversion of the Gram matrix $\bfK(\bfX, \bfX)$, whose cost balloons to the order of $\calO(N^{3}D^{3})$. Even when $D \ll N$, this is a significant increase in the computational requirement for an already-expensive operation. We will now turn our attention towards three specific cases of multi-output Gaussian processes, which give simpler forms for the Gram matrix $\bfK(\bfX, \bfX)$.
+
+\paragraph{Fully Independent Model:} The simplest form of a multi-output Gaussian process is one in which each output dimension is assumed to be an independent univariate Gaussian process: $f_{d} \sim \calGP(m_{d}, k_{d})$. Under this assumption, the Gram matrix $\bfk(\bfX, \bfX)$ is a block-diagonal matrix with $D$ $N \times N$ sub-blocks. This model is computationally quite cheap, as it can be simply decoupled into $D$ separate single-output regression problems. However, this model makes the strong assumption that the targeted outputs are fully independent, and it shares no information across the output dimensions, which hampers its applicability in many practical contexts.
+
+This model is computationally cheap, since it decouples into $D$ separate single-output problems, but it shares no information across outputs whatsoever. The models below reintroduce dependencies between the outputs by expressing them as the linear combinations of latent Gaussian processes.
+
+\paragraph{Linear Model of Coregionalization (LMC):} The LMC model for a Gaussian process with a vector-valued output is predicated on the assumption that the output functions are built from a linear combination of some set of independent mean-zero univariate Gaussian processes \citep{Alvarez-Vector-Kernels-2012}. Suppose that the latent Gaussian processes $u_{1}, \dots, u_{R}$ are independent, with $\expec{u_{i}(\bfx)} = 0$ and $\covar{u_{r}(\bfx)}{u_{r'}(\bfx')} = \mathbf{1}_{\{r = r'\}} \times k_{r}(\bfx, \bfx')$, so that the covariance is nonzero if and only if $r = r'$. 
+
+Following the description given by \citet{Alvarez-Vector-Kernels-2012}, we can sort these latent GPs based on their covariance function, giving us $Q$ groups of size $\{R_{q}\}_{q=1}^{Q}$. By sorting the latent processes in this manner, each group $q$ (for $q = 1, \dots, Q$) consists of $R_{q}$ independent univariate Gaussian processes of the form $u_{q}^{1}, \dots, u_{q}^{R_{q}} \simiid \calGP(0, k_{q})$. Note that even though the covariance structures are shared for latent functions in the same group, the respective Gaussian processes are still entirely independent. As such, $\covar*{u_{q}^{i}(\bfx)}{u_{q'}^{i'}(\bfx')} = \mathbf{1}_{\{q = q'\}} \times \mathbf{1}_{\{i = i'\}} \times k_{q}(\bfx, \bfx')$ under this regrouping of the latent functions.
+
+In the LMC model, we assume that the desired functions $\{f_{d}(\cdot)\}_{d=1}^{D}$ for the multivariate process are constructed via a linear combination of the latent Gaussian processes $u_{1}, \dots, u_{R}$. Each function is therefore described by the following latent model:
+\begin{align}
+    f_{d}(\bfx) &= m_{d}(\bfx) + \sum_{r=1}^{R}\alpha_{d,r}u_{r}(\bfx) \label{eq:LMC-generative-ungrouped}
+    \intertext{Grouping the latent functions by their kernel, this can be written in the form}
+    f_{d}(\bfx) &= m_{d}(\bfx) + \sum_{q=1}^{Q}\sum_{i=1}^{R_{q}}\alpha_{d,q}^{i}u_{q}^{i}(\bfx) \label{eq:LMC-generative-grouped}
+\end{align}
+The functions $\{m_{d}(\cdot)\}_{d=1}^{D}$ in \Cref{eq:LMC-generative-ungrouped,eq:LMC-generative-grouped} ensure that each function in the observable multi-output process can have a non-zero mean. 
+Using the latent form given in \Cref{eq:LMC-generative-grouped}, we can represent the covariance between two outputs by the following:
+\begin{subequations}
+    \label{eq:LMC-kernel}
+    \begin{align}
+        \covar{f_{d}(\bfx)}{f_{d'}(\bfx')} &= \sum_{q=1}^{Q}\sum_{q'=1}^{Q}\sum_{i=1}^{R_{q}}\sum_{i=1}^{R_{q'}}\alpha_{d,q}^{i}\alpha_{d',q'}^{i'}\covar{u_{q}^{i}(\bfx)}{u_{q'}^{i'}(\bfx)} \label{eq:LMC-kernel-long}
+        \intertext{In the summation above, the covariance is non-zero if and only if $q = q'$ and $i = i'$.}
+        &= \sum_{q=1}^{Q}\sum_{i=1}^{R_{q}}\alpha_{d,q}^{i}\alpha_{d',q}^{i}\covar{u_{q}^{i}(\bfx)}{u_{q}^{i}(\bfx)}\label{eq:LMC-kernel-shorter}\\
+        &= \sum_{q=1}^{Q}\sum_{i=1}^{R_{q}}\alpha_{d,q}^{i}\alpha_{d',q}^{i}k_{q}(\bfx, \bfx') \label{eq:LMC-kernel-short}
+    \end{align}
+\end{subequations}
+For each group $q = 1, \dots, Q$, and each pair of dimensions $(d, d')$, we define the value $b^{(q)}_{d, d'} := \sum_{i=1}^{R_{q}}\alpha_{d,q}^{i}\alpha_{d',q}^{i}$. We can then concatenate these values into a $D \times D$ \emph{coregionalization} matrix $\bfB^{(q)}$ such that $[\bfB^{(q)}]_{(d,d')} = b^{q}_{d,d'}$. Using these coregionalization matrices yields the kernel function for the linear model of coregionalization, which is given by 
+\begin{equation}
+    \bfK(\bfx, \bfx') = \sum_{q=1}^{Q}k_{q}(\bfx, \bfx')\bfB^{(q)}, \quad \textrm{with}\ \bfK(\bfx, \bfx')\in \bbR^{D \times D},
+\end{equation}
+and the overall Gram matrix for the linear model of coregionalization is given by
+\begin{equation}
+    \label{eq:LMC-gram}
+    \bfK(\bfX, \bfX) = \sum_{q=1}^{Q}k_{q}(\bfX, \bfX) \otimes \bfB^{(q)}, \quad \textrm{with}\ \bfK(\bfX, \bfX) \in \bbR^{ND \times ND}
+\end{equation}
+The linear model of coregionalization is commonly used for describing the kernels of multi-output Gaussian processes in scientific modelling settings such as inference among sensor networks, geostatistical applications, and robot dynamics \citep{Alvarez-Vector-Kernels-2012, Liu-MOGP-Remarks-2018}.
+
+\paragraph{Intrinsic Coregionalization Model (ICM):} The intrinsic coregionalization model (ICM) for a multi-output Gaussian process is a special case of the LMC kernel, where the number of distinct kernel functions ($Q$) is equal to one. The ICM kernel is a more restrictive simplification of the LMC kernel, but the Gram matrix will be significantly less expensive to decompose as a result of this simplifying assumption.
+
+The ICM kernel can be derived in the same format as the LMC kernel, with all latent functions $u_{1}, \dots, u_{R} \simiid \calGP(0,k)$. The covariances generated by the ICM kernel are described by the following relations:
+\begin{equation}
+    \label{eq:ICM-covariance}
+    \covar{f_{d}(\bfx)}{f_{d'}(\bfx')} = k(\bfx, \bfx') \times \bfB_{(d, d')}
+\end{equation}
+The covariance given in \Cref{eq:ICM-covariance} corresponds to a kernel which is similar to that in \Cref{eq:LMC-gram}, with only one spatial kernel $k(\bfX, \bfX) \in \bbR^{N \times N}$ and one corresponding coregionalization matrix $\bfB \in \bbR^{D \times D}$ for the outputs. 
+\begin{equation}
+    \label{eq:ICM-gram}
+    \bfK(\bfX, \bfX) = k(\bfX, \bfX) \otimes \bfB, \quad \textrm{with}\ \bfK(\bfX, \bfX) \in \bbR^{ND \times ND}
+\end{equation}
+The ICM kernel is an example of a \emph{separable} kernel, as the Gram matrix in \ref{eq:ICM-gram} can be written as the Kronecker product of one purely spatial Gram matrix and another purely output-related Gram matrix. Similarly, the individual terms of the form $k(\bfX, \bfX) \otimes \bfB^{(q)}$ in the summation in \ref{eq:LMC-gram} are separable kernels.
+
+\paragraph{Semiparametric Latent Factor Model (SLFM):} Another special case of the LMC kernel is the \emph{semiparametric latent factor model} (SLFM) \citep{Bonilla-Multitask-GP-2007}, in which there is exactly one kernel corresponding to each group, i.e. $R_{q} = 1$ for each $q \in \{1, \dots, Q\}$ in the equation in \Cref{eq:LMC-generative-grouped}. Under this scenario, each matrix $\bfB^{(q)}$ is a rank-one matrix generated by the coefficients ${\alpha}_{d,q}$, which also allows for the resulting matrix decomposed in a less expensive manner than the traditional LMC kernel.
+
+\paragraph{Other Constructions:} Many valid MOGP kernels do not satisfy the sum of separable kernels form which was depicted above, such as \emph{process convolution} approaches \citep{Boyle-Dependent-GP-2004} and other invariant forms of kernels which incorporate lags or spatial shifts \citep{Alvarez-Vector-Kernels-2012}. In this paper, we focus on multi-output kernels which can be represented via a sum of separable kernels, as the Kronecker product structure combines naturally with the separability requirements considered by \citet{Todescato-Efficient-2020}. This produces a convenient structure for the Gram matrices which we consider in \Cref{sec:problem}.
 
 \subsection{Kalman Filtering}
+\label{subsec:kalman}
 
-The Kalman filter (KF), first introduced by and eponymously named for Rudolf E. K\'{a}lm\'{a}n \citeyearpar{Kalman-Filter-1960}, is a technique for 
+The Kalman filter (KF), introduced and eponymously named for Rudolf E. K{\'a}lm{\'a}n \citeyearpar{Kalman-Filter-1960}, is a technique for recursively estimating the unobserved (latent) states of a linear dynamical system from a sequence of noisy and indirect measurements of the system. K{\'a}lm{\'a}n originally derived the filter as the means to solving an optimal linear estimation problem via orthogonal projections. However, the Kalman filter also lends itself to a statistical interpretation, as the filter is equivalent to the solution of a Bayesian inference problem for a \emph{linear Gaussian state-space model} whose posterior distribution is updated sequentially as new observations are recorded \citep{Bayesian-Filter-Book-2023}.
+
+In this subsection of the paper, we will formally describe the Kalman filter, and the linear Gaussian state-space model which underpins the statistical viewpoint for the Kalman filter. These statistical properties of interest are central to the algorithm presented by \citet{Todescato-Efficient-2020}.
+
+% \subsubsection{Linear Gaussian State-Space Models}
+% \label{subsubsec:LGSSM}
+\paragraph{Linear Gaussian State-Space Model:} The linear Gaussian state-space model 
+
+
+
+Let $t_{1} < t_{2} < \cdots < t_{T}$ be a sequence of (not necessarily equally-spaced) time points, indexed by $k = 1, \dots, T$. A state-space model describes the joint behaviour of two stochastic processes: a latent \emph{state} process $\{\bfz_{k}\}$ taking values in $\bbR^{d_{z}}$, which evolves over time according to some Markovian dynamics, and an \emph{observation} (or \emph{measurement}) process $\{\bfy_{k}\}$ taking values in $\bbR^{d_{y}}$, where each observation $\bfy_{k}$ is a noisy function of the current state $\bfz_{k}$. Throughout this subsection, we use the shorthand $\bfy_{1:k} := (\bfy_{1}, \dots, \bfy_{k})$ to denote the collection of the first $k$ observations, and we write $\calN(\,\cdot\,; \bfmu, \bfSigma)$ to denote the density function of the $\calN(\bfmu, \bfSigma)$ distribution.
+
+\begin{definition}[Linear Gaussian State-Space Model]
+\label{def:LGSSM}
+    A \emph{linear Gaussian state-space model} is a state-space model in which the state and observation processes are described by the following equations:
+    \begin{subequations}
+        \label{eq:LGSSM}
+        \begin{align}
+            \textbf{Initial state:} \quad & \bfz_{0} \sim \calN\big(\bfm_{0}, \bfP_{0}\big) \label{eq:LGSSM-init}\\[6pt]
+            \textbf{Dynamic model:} \quad & \bfz_{k} = \bfF_{k-1}\bfz_{k-1} + \bfq_{k-1}, \quad \bfq_{k-1} \sim \calN\big(\mathbf{0}, \bfQ_{k-1}\big) \label{eq:LGSSM-dynamic}\\[6pt]
+            \textbf{Measurement model:} \quad & \bfy_{k} = \bfH_{k}\bfz_{k} + \bfr_{k}, \quad \bfr_{k} \sim \calN\big(\mathbf{0}, \bfR_{k}\big) \label{eq:LGSSM-measurement}
+        \end{align}
+    \end{subequations}
+    Here, $\bfF_{k-1} \in \bbR^{d_{z} \times d_{z}}$ is the \emph{state transition matrix}, $\bfH_{k} \in \bbR^{d_{y} \times d_{z}}$ is the \emph{measurement matrix}, $\bfQ_{k-1} \in \bbR^{d_{z} \times d_{z}}$ is the positive semi-definite \emph{process noise} covariance matrix, and $\bfR_{k} \in \bbR^{d_{y} \times d_{y}}$ is the positive-definite \emph{measurement noise} covariance matrix. The initial state $\bfz_{0}$, the process noise terms $\bfq_{0:T-1}$, and the measurement noise terms $\bfr_{1:T}$ are all assumed to be mutually independent.
+\end{definition}
+
+% For now, we treat the model matrices $\bfF_{k}, \bfH_{k}, \bfQ_{k}, \bfR_{k}$ and the initial moments $\bfm_{0}, \bfP_{0}$ as known; the case where they depend on unknown parameters is addressed in \Cref{subsubsec:KF-likelihood}. From a statistical perspective, the dynamic model in \Cref{eq:LGSSM-dynamic} is a (possibly time-varying) first-order vector autoregression on the latent states, while the measurement model in \Cref{eq:LGSSM-measurement} is a linear regression of each observation on the corresponding latent state. Many familiar time series models can be written in this form; for example, an $\textrm{AR}(p)$ process can be expressed as a linear Gaussian state-space model with $d_{z} = p$ by stacking the $p$ most recent values of the process into the state vector (the so-called \emph{companion form}).
+
+% Equivalently, \Cref{def:LGSSM} can be expressed in terms of conditional distributions:
+% \begin{equation}
+% \label{eq:LGSSM-densities}
+%     p(\bfz_{k} \mid \bfz_{k-1}) = \calN\big(\bfz_{k};\, \bfF_{k-1}\bfz_{k-1},\, \bfQ_{k-1}\big), \qquad p(\bfy_{k} \mid \bfz_{k}) = \calN\big(\bfy_{k};\, \bfH_{k}\bfz_{k},\, \bfR_{k}\big)
+% \end{equation}
+% The mutual independence of the initial state and the noise terms implies two conditional independence properties which are fundamental to everything that follows:
+% \begin{enumerate}[label = (\roman*)]
+%     \item \textbf{Markov property of the states:} given $\bfz_{k-1}$, the state $\bfz_{k}$ is conditionally independent of all earlier states and observations, so that $p(\bfz_{k} \mid \bfz_{0:k-1}, \bfy_{1:k-1}) = p(\bfz_{k} \mid \bfz_{k-1})$.
+%     \item \textbf{Conditional independence of the observations:} given $\bfz_{k}$, the observation $\bfy_{k}$ is conditionally independent of all other states and observations, so that $p(\bfy_{k} \mid \bfz_{0:k}, \bfy_{1:k-1}) = p(\bfy_{k} \mid \bfz_{k})$.
+% \end{enumerate}
+% Consequently, the joint density of all states and observations factorizes as follows:
+% \begin{equation}
+% \label{eq:LGSSM-joint}
+%     p(\bfz_{0:T}, \bfy_{1:T}) = p(\bfz_{0})\prod_{k=1}^{T}p(\bfz_{k} \mid \bfz_{k-1})\,p(\bfy_{k} \mid \bfz_{k})
+% \end{equation}
+% In other words, a linear Gaussian state-space model is a hidden Markov model with a continuous state space and Gaussian transition and emission densities. Furthermore, since every state and observation is a linear combination of the independent Gaussian vectors $\bfz_{0}, \bfq_{0:T-1}, \bfr_{1:T}$, the entire collection $(\bfz_{0:T}, \bfy_{1:T})$ is \emph{jointly} Gaussian. In principle, any conditional distribution of interest (such as the distribution of $\bfz_{k}$ given $\bfy_{1:T}$) could therefore be obtained by directly conditioning this joint Gaussian distribution, exactly as was done for Gaussian process regression in \Cref{eq:GP-posterior}. However, doing so naively requires factorizing a covariance matrix of dimension $T d_{y} \times T d_{y}$, which costs $\calO(T^{3}d_{y}^{3})$ operations. The Kalman filter instead exploits the Markov structure in \Cref{eq:LGSSM-joint} to compute the same quantities with a cost which scales linearly in $T$.
+
+% \subsubsection{The Bayesian Filtering Recursion}
+% \label{subsubsec:bayes-filter}
+
+% In a state-space model, the primary inferential target is the \emph{filtering distribution} $p(\bfz_{k} \mid \bfy_{1:k})$: the posterior distribution of the current state, given all of the observations collected up to and including time $t_{k}$. Two closely related quantities are the \emph{predictive distribution} $p(\bfz_{k} \mid \bfy_{1:k-1})$, which describes the current state before the $k$\textsuperscript{th} observation is collected, and the \emph{smoothing distribution} $p(\bfz_{k} \mid \bfy_{1:T})$, which conditions on the entire observed sequence (including observations collected after time $t_{k}$).
+
+% Using the two conditional independence properties above, the filtering distributions can be computed recursively, beginning from $p(\bfz_{0})$ and alternating between the following two steps for each $k = 1, \dots, T$ \citep{Bayesian-Filter-Book-2023}:
+% \begin{subequations}
+%     \label{eq:bayes-filter}
+%     \begin{align}
+%         \textbf{Prediction:} \quad & p(\bfz_{k} \mid \bfy_{1:k-1}) = \int_{\bbR^{d_{z}}} p(\bfz_{k} \mid \bfz_{k-1})\,p(\bfz_{k-1} \mid \bfy_{1:k-1})\,\mathrm{d}\bfz_{k-1} \label{eq:bayes-filter-predict}\\[6pt]
+%         \textbf{Update:} \quad & p(\bfz_{k} \mid \bfy_{1:k}) = \frac{p(\bfy_{k} \mid \bfz_{k})\,p(\bfz_{k} \mid \bfy_{1:k-1})}{\int_{\bbR^{d_{z}}} p(\bfy_{k} \mid \bfz_{k}')\,p(\bfz_{k}' \mid \bfy_{1:k-1})\,\mathrm{d}\bfz_{k}'} \label{eq:bayes-filter-update}
+%     \end{align}
+% \end{subequations}
+% The prediction step in \Cref{eq:bayes-filter-predict} is the Chapman--Kolmogorov equation, which propagates uncertainty about the state forward in time through the dynamic model. The update step in \Cref{eq:bayes-filter-update} is simply Bayes' theorem, wherein the predictive distribution plays the role of the prior and $p(\bfy_{k} \mid \bfz_{k})$ plays the role of the likelihood. In this sense, Bayesian filtering is sequential Bayesian updating: the posterior distribution of the state at time $t_{k-1}$, after being propagated through the dynamics, becomes the prior distribution at time $t_{k}$.
+
+% For general (non-linear or non-Gaussian) state-space models, the integrals in \Cref{eq:bayes-filter} are rarely tractable, and must be approximated using methods such as the extended or unscented Kalman filters or sequential Monte Carlo \citep{Bayesian-Filter-Book-2023}. The linear Gaussian model is special because the Gaussian family is closed under both operations: a linear transformation of a Gaussian random vector plus independent Gaussian noise is Gaussian, and a Gaussian prior combined with a linear Gaussian likelihood yields a Gaussian posterior. Therefore, every predictive and filtering distribution is Gaussian, and is completely characterized by its mean vector and covariance matrix. The Kalman filter is precisely the set of recursions which propagate these two moments through \Cref{eq:bayes-filter}.
+
+% \subsubsection{Two Gaussian Identities}
+% \label{subsubsec:gaussian-identities}
+
+% The derivation of the Kalman filter relies on two standard results about the multivariate Gaussian distribution.
+
+% \begin{theorem}[Linear Gaussian Model]
+% \label{thm:gauss-joint}
+%     Let $\bfa \in \bbR^{n}$ and $\bfb \in \bbR^{m}$ be random vectors such that $\bfa \sim \calN(\bfmu, \bfSigma)$ and $\bfb \mid \bfa \sim \calN(\bfH\bfa, \bfR)$, for some matrix $\bfH \in \bbR^{m \times n}$ and some positive semi-definite $\bfR \in \bbR^{m \times m}$. Then the vectors $\bfa$ and $\bfb$ are jointly Gaussian, with the following joint distribution:
+%     \begin{equation}
+%     \label{eq:gauss-joint}
+%         \begin{bmatrix}
+%             \bfa \\ \bfb
+%         \end{bmatrix} \sim \calN\left(\begin{bmatrix}
+%             \bfmu \\ \bfH\bfmu
+%         \end{bmatrix}, \begin{bmatrix}
+%             \bfSigma & \bfSigma\bfH^{\sfTsmall}\\
+%             \bfH\bfSigma & \bfH\bfSigma\bfH^{\sfTsmall} + \bfR
+%         \end{bmatrix}\right)
+%     \end{equation}
+% \end{theorem}
+
+% \begin{theorem}[Gaussian Conditioning]
+% \label{thm:gauss-conditioning}
+%     Let $\bfa \in \bbR^{n}$ and $\bfb \in \bbR^{m}$ be jointly Gaussian random vectors with the following joint distribution:
+%     \begin{equation*}
+%         \begin{bmatrix}
+%             \bfa \\ \bfb
+%         \end{bmatrix} \sim \calN\left(\begin{bmatrix}
+%             \bfmu_{a} \\ \bfmu_{b}
+%         \end{bmatrix}, \begin{bmatrix}
+%             \bfSigma_{aa} & \bfSigma_{ab}\\
+%             \bfSigma_{ba} & \bfSigma_{bb}
+%         \end{bmatrix}\right)
+%     \end{equation*}
+%     If $\bfSigma_{bb}$ is invertible, then the conditional distribution of $\bfa$ given $\bfb$ is also Gaussian, and is given by the following:
+%     \begin{equation}
+%     \label{eq:gauss-conditioning}
+%         \bfa \mid \bfb \sim \calN\Big(\bfmu_{a} + \bfSigma_{ab}\bfSigma_{bb}^{-1}(\bfb - \bfmu_{b}),\; \bfSigma_{aa} - \bfSigma_{ab}\bfSigma_{bb}^{-1}\bfSigma_{ba}\Big)
+%     \end{equation}
+% \end{theorem}
+
+% \Cref{thm:gauss-conditioning} is the same result which yields the Gaussian process posterior: setting $\bfa = f(\bfx)$ and $\bfb = \bfy$ in \Cref{eq:gauss-conditioning} recovers \Cref{eq:GP-post-mean,eq:GP-post-kernel}. Two features of \Cref{eq:gauss-conditioning} are worth highlighting. First, the conditional mean is an affine function of $\bfb$, where the matrix $\bfSigma_{ab}\bfSigma_{bb}^{-1}$ is the population regression coefficient of $\bfa$ on $\bfb$. Second, the conditional covariance does not depend on the observed value of $\bfb$; it is the Schur complement of $\bfSigma_{bb}$ in the joint covariance matrix. Both of these features carry over directly to the Kalman filter.
+
+% \subsubsection{Derivation of the Kalman Filter}
+% \label{subsubsec:KF-derivation}
+
+% For indices $j \le k$, define the conditional moments $\bfm_{k \mid j} := \expec{\bfz_{k} \mid \bfy_{1:j}}$ and $\bfP_{k \mid j} := \var{\bfz_{k} \mid \bfy_{1:j}}$, with the initialization $\bfm_{0 \mid 0} := \bfm_{0}$ and $\bfP_{0 \mid 0} := \bfP_{0}$. Suppose that the filtering distribution at time $t_{k-1}$ is $\bfz_{k-1} \mid \bfy_{1:k-1} \sim \calN(\bfm_{k-1 \mid k-1}, \bfP_{k-1 \mid k-1})$.
+
+% \paragraph{Prediction step.} The process noise $\bfq_{k-1}$ is independent of both $\bfz_{k-1}$ and $\bfy_{1:k-1}$, since the latter quantities are functions of $\bfz_{0}, \bfq_{0:k-2}$ and $\bfr_{1:k-1}$ only. Hence, conditionally on $\bfy_{1:k-1}$, the state $\bfz_{k} = \bfF_{k-1}\bfz_{k-1} + \bfq_{k-1}$ is a linear transformation of a Gaussian vector plus independent Gaussian noise, and so it is also Gaussian. Its moments follow from the laws of total expectation and total variance:
+% \begin{subequations}
+%     \label{eq:KF-predict}
+%     \begin{align}
+%         \bfm_{k \mid k-1} &= \expec{\expec{\bfz_{k} \mid \bfz_{k-1}, \bfy_{1:k-1}} \mid \bfy_{1:k-1}} = \bfF_{k-1}\bfm_{k-1 \mid k-1} \label{eq:KF-predict-mean}\\[6pt]
+%         \bfP_{k \mid k-1} &= \expec{\var{\bfz_{k} \mid \bfz_{k-1}, \bfy_{1:k-1}} \mid \bfy_{1:k-1}} + \var{\expec{\bfz_{k} \mid \bfz_{k-1}, \bfy_{1:k-1}} \mid \bfy_{1:k-1}} \nonumber\\
+%         &= \bfQ_{k-1} + \bfF_{k-1}\bfP_{k-1 \mid k-1}\bfF_{k-1}^{\sfTsmall} \label{eq:KF-predict-cov}
+%     \end{align}
+% \end{subequations}
+% \Cref{eq:KF-predict-cov} decomposes the predictive uncertainty into two sources: the propagated uncertainty about the previous state, $\bfF_{k-1}\bfP_{k-1 \mid k-1}\bfF_{k-1}^{\sfTsmall}$, and the new uncertainty introduced by the random dynamics between $t_{k-1}$ and $t_{k}$, $\bfQ_{k-1}$.
+
+% \paragraph{Update step.} By the conditional independence of the observations, the conditional distribution of $\bfy_{k}$ given both $\bfz_{k}$ and $\bfy_{1:k-1}$ is $\calN(\bfH_{k}\bfz_{k}, \bfR_{k})$. Applying \Cref{thm:gauss-joint} conditionally on $\bfy_{1:k-1}$, with $\bfa = \bfz_{k}$ and $\bfb = \bfy_{k}$, gives the joint predictive distribution of the next state and the next observation:
+% \begin{equation}
+% \label{eq:KF-joint}
+%     \begin{bmatrix}
+%         \bfz_{k} \\ \bfy_{k}
+%     \end{bmatrix} \,\bigg|\, \bfy_{1:k-1} \sim \calN\left(\begin{bmatrix}
+%         \bfm_{k \mid k-1} \\ \bfH_{k}\bfm_{k \mid k-1}
+%     \end{bmatrix}, \begin{bmatrix}
+%         \bfP_{k \mid k-1} & \bfP_{k \mid k-1}\bfH_{k}^{\sfTsmall}\\
+%         \bfH_{k}\bfP_{k \mid k-1} & \bfH_{k}\bfP_{k \mid k-1}\bfH_{k}^{\sfTsmall} + \bfR_{k}
+%     \end{bmatrix}\right)
+% \end{equation}
+% Conditioning $\bfz_{k}$ on the newly-observed value of $\bfy_{k}$ via \Cref{thm:gauss-conditioning} then yields the filtering distribution $\bfz_{k} \mid \bfy_{1:k} \sim \calN(\bfm_{k \mid k}, \bfP_{k \mid k})$, whose moments are conventionally expressed in terms of the following three quantities:
+% \begin{subequations}
+%     \label{eq:KF-update}
+%     \begin{align}
+%         \textbf{Innovation:} \quad & \bfv_{k} := \bfy_{k} - \bfH_{k}\bfm_{k \mid k-1} \label{eq:KF-innovation}\\[6pt]
+%         \textbf{Innovation covariance:} \quad & \bfS_{k} := \bfH_{k}\bfP_{k \mid k-1}\bfH_{k}^{\sfTsmall} + \bfR_{k} \label{eq:KF-innovation-cov}\\[6pt]
+%         \textbf{Kalman gain:} \quad & \bfK_{k} := \bfP_{k \mid k-1}\bfH_{k}^{\sfTsmall}\bfS_{k}^{-1} \label{eq:KF-gain}\\[6pt]
+%         \textbf{Filtered mean:} \quad & \bfm_{k \mid k} = \bfm_{k \mid k-1} + \bfK_{k}\bfv_{k} \label{eq:KF-update-mean}\\[6pt]
+%         \textbf{Filtered covariance:} \quad & \bfP_{k \mid k} = \bfP_{k \mid k-1} - \bfK_{k}\bfS_{k}\bfK_{k}^{\sfTsmall} \label{eq:KF-update-cov}
+%     \end{align}
+% \end{subequations}
+% Note that $\bfS_{k}$ is always invertible, since $\bfR_{k}$ is positive-definite. Since the filtering distribution at time $t_{k}$ is again Gaussian, the induction is complete: \Cref{eq:KF-predict,eq:KF-update} together constitute the Kalman filter, and they compute the \emph{exact} filtering distributions of the linear Gaussian state-space model. The full procedure is summarized in \Cref{alg:KF}, which additionally accumulates the log marginal likelihood of the observations (see \Cref{subsubsec:KF-likelihood}).
+
+% \begin{algorithm}[htbp]
+% \caption{Kalman filter with log marginal likelihood}
+% \label{alg:KF}
+% \begin{algorithmic}[1]
+%     \Require Observations $\bfy_{1:T}$; model matrices $\{\bfF_{k-1}, \bfQ_{k-1}, \bfH_{k}, \bfR_{k}\}_{k=1}^{T}$; initial moments $\bfm_{0}, \bfP_{0}$
+%     \State $\bfm_{0 \mid 0} \gets \bfm_{0}$, \quad $\bfP_{0 \mid 0} \gets \bfP_{0}$, \quad $\ell \gets 0$
+%     \For{$k = 1, \dots, T$}
+%         \State $\bfm_{k \mid k-1} \gets \bfF_{k-1}\bfm_{k-1 \mid k-1}$ \Comment{Prediction}
+%         \State $\bfP_{k \mid k-1} \gets \bfF_{k-1}\bfP_{k-1 \mid k-1}\bfF_{k-1}^{\sfTsmall} + \bfQ_{k-1}$
+%         \State $\bfv_{k} \gets \bfy_{k} - \bfH_{k}\bfm_{k \mid k-1}$ \Comment{Update}
+%         \State $\bfS_{k} \gets \bfH_{k}\bfP_{k \mid k-1}\bfH_{k}^{\sfTsmall} + \bfR_{k}$
+%         \State $\bfK_{k} \gets \bfP_{k \mid k-1}\bfH_{k}^{\sfTsmall}\bfS_{k}^{-1}$
+%         \State $\bfm_{k \mid k} \gets \bfm_{k \mid k-1} + \bfK_{k}\bfv_{k}$
+%         \State $\bfP_{k \mid k} \gets \bfP_{k \mid k-1} - \bfK_{k}\bfS_{k}\bfK_{k}^{\sfTsmall}$
+%         \State $\ell \gets \ell - \frac{1}{2}\big[\log\det(2\pi\bfS_{k}) + \bfv_{k}^{\sfTsmall}\bfS_{k}^{-1}\bfv_{k}\big]$ \Comment{Likelihood}
+%     \EndFor
+%     \State \Return Filtered moments $\{\bfm_{k \mid k}, \bfP_{k \mid k}\}_{k=1}^{T}$ and log marginal likelihood $\ell = \log p(\bfy_{1:T})$
+% \end{algorithmic}
+% \end{algorithm}
+
+% \subsubsection{Statistical Interpretation of the Update Step}
+% \label{subsubsec:KF-interpretation}
+
+% Each of the quantities in \Cref{eq:KF-update} has a direct statistical meaning. The innovation $\bfv_{k}$ is the one-step-ahead prediction error for the observation, i.e. the portion of $\bfy_{k}$ which could not be predicted from $\bfy_{1:k-1}$, and $\bfS_{k} = \var{\bfy_{k} \mid \bfy_{1:k-1}}$ is its variance. Comparing \Cref{eq:KF-gain} with \Cref{eq:KF-joint} shows that the Kalman gain is
+% \begin{equation*}
+%     \bfK_{k} = \covar{\bfz_{k}}{\bfy_{k} \mid \bfy_{1:k-1}}\,\var{\bfy_{k} \mid \bfy_{1:k-1}}^{-1},
+% \end{equation*}
+% which is the population regression coefficient of the state $\bfz_{k}$ on the observation $\bfy_{k}$, conditionally on the past observations. The update in \Cref{eq:KF-update-mean} is therefore a regression adjustment: the prior guess $\bfm_{k \mid k-1}$ is corrected in proportion to how surprising the new observation is.
+
+% The trade-off which the gain encodes is clearest in the scalar case $d_{z} = d_{y} = 1$ with $\bfH_{k} = 1$, where writing $P^{-} := \bfP_{k \mid k-1}$ and $R := \bfR_{k}$ yields
+% \begin{equation*}
+%     K_{k} = \frac{P^{-}}{P^{-} + R}, \qquad m_{k \mid k} = (1 - K_{k})\,m_{k \mid k-1} + K_{k}\,y_{k}, \qquad \frac{1}{P_{k \mid k}} = \frac{1}{P^{-}} + \frac{1}{R}
+% \end{equation*}
+% That is, the filtered mean is a precision-weighted average of the prior prediction and the new observation, and the posterior precision is the sum of the prior precision and the precision of the measurement. When the measurement is very noisy ($R \gg P^{-}$), $K_{k} \approx 0$ and the filter largely ignores $y_{k}$; when the measurement is very precise relative to the prediction ($R \ll P^{-}$), $K_{k} \approx 1$ and the filter essentially adopts $y_{k}$ as the new estimate. This is the familiar shrinkage behaviour of conjugate normal--normal Bayesian models. The same structure holds in general, as \Cref{eq:KF-update-mean,eq:KF-update-cov} can be rewritten in the equivalent \emph{information form}:
+% \begin{equation}
+% \label{eq:KF-information}
+%     \bfP_{k \mid k}^{-1} = \bfP_{k \mid k-1}^{-1} + \bfH_{k}^{\sfTsmall}\bfR_{k}^{-1}\bfH_{k}, \qquad \bfP_{k \mid k}^{-1}\bfm_{k \mid k} = \bfP_{k \mid k-1}^{-1}\bfm_{k \mid k-1} + \bfH_{k}^{\sfTsmall}\bfR_{k}^{-1}\bfy_{k}
+% \end{equation}
+% Here, $\bfH_{k}^{\sfTsmall}\bfR_{k}^{-1}\bfH_{k}$ is the Fisher information about $\bfz_{k}$ contained in the single observation $\bfy_{k}$, so that each update step adds the information from the new measurement to the information carried forward from the past. One consequence of \Cref{eq:KF-information} is that $\bfP_{k \mid k} \preceq \bfP_{k \mid k-1}$ in the Loewner order: conditioning on an additional observation can never increase the posterior uncertainty about the state.
+
+% A further important property is that the covariance recursions in \Cref{eq:KF-predict-cov,eq:KF-innovation-cov,eq:KF-gain,eq:KF-update-cov} do not involve the observed data $\bfy_{1:T}$ at all, mirroring the corresponding property of \Cref{thm:gauss-conditioning} and of the GP posterior kernel in \Cref{eq:GP-post-kernel}. Combining the prediction and update steps gives a deterministic matrix recursion for $\bfP_{k \mid k-1}$ known as the discrete-time \emph{Riccati equation}. As a result, the covariances and gains can be precomputed before any data are observed. Moreover, for a time-invariant model (i.e. with $\bfF_{k} \equiv \bfF$, $\bfH_{k} \equiv \bfH$, $\bfQ_{k} \equiv \bfQ$ and $\bfR_{k} \equiv \bfR$) satisfying mild regularity conditions (namely detectability of $(\bfF, \bfH)$ and stabilizability of $(\bfF, \bfQ^{1/2})$), the predictive covariance $\bfP_{k \mid k-1}$ converges to a unique fixed point of the Riccati equation as $k \to \infty$. In this case, the filter may be run with a constant \emph{steady-state} gain $\bfK_{\infty}$, which removes the need to compute any matrix inverses during filtering.
+
+% Finally, we note that although \Cref{eq:KF-update-cov} is algebraically exact, in floating-point arithmetic the subtraction can produce a covariance matrix which fails to be symmetric positive semi-definite. A numerically preferable, algebraically equivalent alternative is the so-called \emph{Joseph form} $\bfP_{k \mid k} = (\bfI - \bfK_{k}\bfH_{k})\bfP_{k \mid k-1}(\bfI - \bfK_{k}\bfH_{k})^{\sfTsmall} + \bfK_{k}\bfR_{k}\bfK_{k}^{\sfTsmall}$, which is a sum of positive semi-definite terms.
+
+% \subsubsection{Optimality of the Kalman Filter}
+% \label{subsubsec:KF-optimality}
+
+% The Kalman filter is optimal in two distinct senses, depending on the strength of the distributional assumptions made about the model.
+
+% \paragraph{Under Gaussianity.} Under the full set of assumptions in \Cref{def:LGSSM}, $\bfm_{k \mid k} = \expec{\bfz_{k} \mid \bfy_{1:k}}$ is the exact posterior mean. It is therefore the Bayes estimator under squared-error loss, and hence the \emph{minimum mean squared error} (MMSE) estimator of $\bfz_{k}$ among \emph{all} (possibly non-linear) measurable functions of $\bfy_{1:k}$:
+% \begin{equation*}
+%     \bfm_{k \mid k} = \argmin_{g}\; \expec{\big\|\bfz_{k} - g(\bfy_{1:k})\big\|_{2}^{2}},
+% \end{equation*}
+% with corresponding error covariance $\expec{(\bfz_{k} - \bfm_{k \mid k})(\bfz_{k} - \bfm_{k \mid k})^{\sfTsmall}} = \bfP_{k \mid k}$. Since \Cref{alg:KF} produces the full posterior distribution, it also provides exact credible regions for the latent state, and not merely point estimates.
+
+% \paragraph{Without Gaussianity.} Suppose instead that $\bfz_{0}$, $\{\bfq_{k}\}$ and $\{\bfr_{k}\}$ are only assumed to be mutually uncorrelated with the stated means and covariances, but are not necessarily Gaussian. The recursions in \Cref{eq:KF-predict,eq:KF-update} depend only on first and second moments, so they can still be computed, but $\bfm_{k \mid k}$ is no longer the conditional expectation in general. Nevertheless, $\bfm_{k \mid k}$ is the \emph{best linear} estimator (also called the linear MMSE estimator): among all estimators which are affine functions of $\bfy_{1:k}$, it uniquely minimizes the mean squared error, and $\bfP_{k \mid k}$ is its error covariance. This is the setting in which \citet{Kalman-Filter-1960} originally derived the filter, by characterizing $\bfm_{k \mid k}$ as the orthogonal projection of $\bfz_{k}$ onto the linear span of the observations. In particular, the estimation error $\bfz_{k} - \bfm_{k \mid k}$ has mean zero and is uncorrelated with every observation $\bfy_{1}, \dots, \bfy_{k}$. This robustness property helps to explain the broad practical success of the Kalman filter, even in applications where the Gaussian assumptions are only approximately satisfied.
+
+% \subsubsection{Innovations and the Marginal Likelihood}
+% \label{subsubsec:KF-likelihood}
+
+% The innovations $\bfv_{1}, \dots, \bfv_{T}$ have a particularly convenient joint distribution. From \Cref{eq:KF-joint}, $\bfv_{k} \mid \bfy_{1:k-1} \sim \calN(\mathbf{0}, \bfS_{k})$. Since this conditional distribution does not depend on $\bfy_{1:k-1}$, the innovation $\bfv_{k}$ is independent of $\bfy_{1:k-1}$, and therefore also independent of $\bfv_{1}, \dots, \bfv_{k-1}$, which are functions of $\bfy_{1:k-1}$. Hence the innovations are mutually independent, with $\bfv_{k} \sim \calN(\mathbf{0}, \bfS_{k})$. In effect, the Kalman filter maps the correlated observation sequence $\bfy_{1:T}$ to a sequence of independent prediction errors, by means of a Gram--Schmidt-type orthogonalization in time.
+
+% This property yields an efficient formula for the marginal likelihood of the data. By the chain rule of probability, $p(\bfy_{1:T}) = \prod_{k=1}^{T}p(\bfy_{k} \mid \bfy_{1:k-1})$, where each factor is the density of $\calN(\bfH_{k}\bfm_{k \mid k-1}, \bfS_{k})$ evaluated at $\bfy_{k}$. Taking logarithms gives the \emph{prediction error decomposition} of the log-likelihood:
+% \begin{equation}
+% \label{eq:KF-loglik}
+%     \log p(\bfy_{1:T} \mid \bftheta) = -\frac{1}{2}\sum_{k=1}^{T}\Big[\log\det\big(2\pi\bfS_{k}(\bftheta)\big) + \bfv_{k}(\bftheta)^{\sfTsmall}\bfS_{k}(\bftheta)^{-1}\bfv_{k}(\bftheta)\Big]
+% \end{equation}
+% where we have made explicit the dependence of the innovations and their covariances on a vector of unknown model parameters $\bftheta$, which determine the matrices $\bfF_{k}, \bfH_{k}, \bfQ_{k}, \bfR_{k}$ (and possibly $\bfm_{0}, \bfP_{0}$). \Cref{eq:KF-loglik} is the exact Gaussian log-likelihood of all $T$ observations, which is the same quantity that would be obtained by evaluating the $\calN$ density of the stacked vector $\bfy_{1:T}$ under its implied $Td_{y} \times Td_{y}$ covariance matrix, but it is computed as a by-product of a single forward pass of \Cref{alg:KF}. Consequently, maximum likelihood (or type-II maximum likelihood, in the GP literature) estimates of $\bftheta$ can be found by numerically optimizing \Cref{eq:KF-loglik}, with each evaluation costing $\calO(T)$ rather than $\calO(T^{3})$ operations. In the context of Gaussian process models, $\bftheta$ typically consists of kernel hyperparameters such as length-scales and marginal variances.
+
+% The independence of the innovations is also useful for model diagnostics: if the model is correctly specified, the standardized innovations $\bfS_{k}^{-1/2}\bfv_{k}$ are independent and identically distributed $\calN(\mathbf{0}, \bfI)$ random vectors, so residual autocorrelation or non-normality in these standardized innovations is evidence of model misspecification. Lastly, the recursive structure handles missing data naturally: if $\bfy_{k}$ is not observed, the update step is simply skipped (i.e., $\bfm_{k \mid k} := \bfm_{k \mid k-1}$ and $\bfP_{k \mid k} := \bfP_{k \mid k-1}$), and the $k$\textsuperscript{th} term is omitted from \Cref{eq:KF-loglik}.
+
+% \subsubsection{Smoothing}
+% \label{subsubsec:RTS}
+
+% The Kalman filter produces the filtering distributions $p(\bfz_{k} \mid \bfy_{1:k})$, which only use the observations collected up to time $t_{k}$. This is appropriate for online settings, where estimates must be produced in real time. However, in an offline (batch) setting, such as Gaussian process regression, the relevant posterior is the smoothing distribution $p(\bfz_{k} \mid \bfy_{1:T})$, which conditions on all of the observations. For linear Gaussian state-space models, the smoothing distributions are also Gaussian, $\bfz_{k} \mid \bfy_{1:T} \sim \calN(\bfm_{k \mid T}, \bfP_{k \mid T})$, and they can be computed by the \emph{Rauch--Tung--Striebel} (RTS) smoother, which runs a backward pass over the output of \Cref{alg:KF}. Starting from $\bfm_{T \mid T}$ and $\bfP_{T \mid T}$, for $k = T-1, \dots, 1$ \citep{Bayesian-Filter-Book-2023}:
+% \begin{subequations}
+%     \label{eq:RTS}
+%     \begin{align}
+%         \bfG_{k} &= \bfP_{k \mid k}\bfF_{k}^{\sfTsmall}\bfP_{k+1 \mid k}^{-1} \label{eq:RTS-gain}\\[6pt]
+%         \bfm_{k \mid T} &= \bfm_{k \mid k} + \bfG_{k}\big(\bfm_{k+1 \mid T} - \bfm_{k+1 \mid k}\big) \label{eq:RTS-mean}\\[6pt]
+%         \bfP_{k \mid T} &= \bfP_{k \mid k} + \bfG_{k}\big(\bfP_{k+1 \mid T} - \bfP_{k+1 \mid k}\big)\bfG_{k}^{\sfTsmall} \label{eq:RTS-cov}
+%     \end{align}
+% \end{subequations}
+% The derivation once again rests on \Cref{thm:gauss-conditioning} together with the Markov property: given $\bfz_{k+1}$, the state $\bfz_{k}$ is conditionally independent of all future observations $\bfy_{k+1:T}$. Thus $\bfG_{k}$ is the regression coefficient of $\bfz_{k}$ on $\bfz_{k+1}$ given $\bfy_{1:k}$, and \Cref{eq:RTS-mean} corrects the filtered estimate using the revision in the estimate of $\bfz_{k+1}$ which arises from incorporating the future observations. Like the filter, the smoother requires $\calO(T)$ operations in total.
+
+% \subsubsection{Computational Cost and the Connection to Gaussian Processes}
+% \label{subsubsec:KF-GP}
+
+% Each iteration of \Cref{alg:KF} involves a fixed number of matrix products and a single factorization of the $d_{y} \times d_{y}$ matrix $\bfS_{k}$, so its cost is $\calO(d_{z}^{3} + d_{y}^{3})$ operations per time step, and $\calO\big(T(d_{z}^{3} + d_{y}^{3})\big)$ operations in total (with the same order of cost for the RTS smoother). Crucially, this cost is \emph{linear} in the number of time points $T$, in contrast to the $\calO(T^{3})$ cost of exact GP regression on $T$ temporal observations. Additionally, the filter only needs to store the current state moments in order to process a new observation, making the filter particularly well-suited to streaming data.
+
+% This computational advantage motivates the connection between Kalman filtering and Gaussian processes which underlies the work of \citet{Carron-ML-Kalman-2016} and \citet{Todescato-Efficient-2020}. As shown by \citet{Sarkka-GP-KF-2013}, a broad class of stationary temporal Gaussian processes $f \sim \calGP(0, k)$, $f: \bbR \to \bbR$ can be represented as the output of a linear time-invariant stochastic differential equation (SDE) of the form
+% \begin{equation}
+% \label{eq:KF-SDE}
+%     \frac{\mathrm{d}\bfz(t)}{\mathrm{d}t} = \bfA\bfz(t) + \bfL\bfw(t), \qquad f(t) = \bfh^{\sfTsmall}\bfz(t),
+% \end{equation}
+% where $\bfz(t) \in \bbR^{d_{z}}$ is a finite-dimensional state vector, $\bfw(t)$ is a white noise process with spectral density matrix $\bfQ_{c}$, and $\bfA$, $\bfL$, $\bfh$ are matrices determined by the kernel $k(\cdot, \cdot)$. Sampling the solution of \Cref{eq:KF-SDE} at the observation times yields exactly a linear Gaussian state-space model of the form given in \Cref{def:LGSSM}, with the following model matrices:
+% \begin{equation}
+% \label{eq:KF-SDE-discretization}
+%     \bfF_{k-1} = \exp\big(\bfA\,\Delta t_{k}\big), \qquad \bfQ_{k-1} = \int_{0}^{\Delta t_{k}}\exp(\bfA\tau)\,\bfL\bfQ_{c}\bfL^{\sfTsmall}\exp(\bfA\tau)^{\sfTsmall}\,\mathrm{d}\tau, \qquad \bfH_{k} = \bfh^{\sfTsmall},
+% \end{equation}
+% where $\Delta t_{k} := t_{k} - t_{k-1}$, $\exp(\cdot)$ denotes the matrix exponential, $\bfR_{k} = \sigma^{2}$ is the measurement noise variance from \Cref{eq:GP-obs-distribution}, and $\bfP_{0}$ is the stationary covariance of $\bfz(t)$. Since the resulting state-space model has the same joint distribution for $(f(t_{1}), \dots, f(t_{T}), y_{1}, \dots, y_{T})$ as the original GP model, the Kalman filter and RTS smoother return \emph{exactly} the same posterior means and variances as \Cref{eq:GP-posterior} at the observation times, and \Cref{eq:KF-loglik} equals the GP log marginal likelihood implied by \Cref{eq:GP-obs-distribution}. That is, the speedup from $\calO(T^{3})$ to $\calO(T)$ is obtained with no approximation whatsoever.
+
+% The simplest example is the exponential (Mat{\'e}rn-$1/2$) kernel $k(t, t') = \sigma_{f}^{2}\exp(-\lambda|t - t'|)$, which corresponds to the Ornstein--Uhlenbeck process. Here $d_{z} = 1$, and \Cref{eq:KF-SDE-discretization} reduces to $F_{k-1} = e^{-\lambda\Delta t_{k}}$ and $Q_{k-1} = \sigma_{f}^{2}\big(1 - e^{-2\lambda\Delta t_{k}}\big)$, so the GP is simply a (possibly irregularly-sampled) Gaussian $\textrm{AR}(1)$ process. More generally, every Mat{\'e}rn kernel with smoothness parameter $\nu = p + 1/2$ for $p \in \bbN$ admits an exact state-space representation with $d_{z} = p + 1$, and the same holds for any stationary kernel whose spectral density is a rational function of the frequency \citep{Sarkka-GP-KF-2013}. Kernels whose spectral densities are not rational, such as the widely-used squared exponential (Gaussian) kernel, do not admit a finite-dimensional representation of this form, but can be approximated to arbitrary accuracy by state-space models of increasing dimension $d_{z}$.
+
+% For spatiotemporal Gaussian processes $f: \calX \times \bbR \to \bbR$, the latent state becomes a function over the spatial domain $\calX$, and the resulting model is an infinite-dimensional analogue of \Cref{def:LGSSM} \citep{Sarkka-Spatial-Kalman-2012,Sarkka-GP-KF-2013}. When $f$ is only evaluated at finitely many spatial locations, this model reduces to a finite-dimensional state-space model, although the state dimension $d_{z}$ then grows with the number of spatial locations. Controlling this growth by exploiting additional structure in the covariance function is the key idea behind the algorithm of \citet{Todescato-Efficient-2020}, which we describe in detail in \Cref{sec:problem}.
 
 \section{Problem Formulation}
 \label{sec:problem}
 
-In 
+First, we will describe the initial univariate Gaussian process regression problem detailed by \citeauthor{Todescato-Efficient-2020} and the algorithm which the authors propose as a means of more efficiently deriving the desired estimates. Following this, we will explain how the algorithm devised by \citeauthor{Todescato-Efficient-2020} may be extended for use with multi-output spatiotemporal dynamical systems, which still retaining similar computational benefits in comparison to the `naive' multi-output Gaussian process methodology.
 
-\begin{definition}[Power Spectrum Density]
+\subsection{Univariate Regression}
 
+\begin{definition}[Power Spectral Density]
+    The power spectral density (PSD) of a univariate real-valued function $z(\tau)$ is given by
+    \begin{equation}
+    \label{eq:PSD-definition}
+        S(\omega) = \int z(\tau)e^{-2\pi{i}\omega\tau}\dx[\tau]
+    \end{equation}
 \end{definition}
 
 \section{Methods}

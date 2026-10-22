@@ -1,6 +1,14 @@
 """Python port of the functions/ folder of Todescato et al.'s MATLAB code."""
 
 from .create_discrete_time_sys import create_discrete_time_sys
+from .generate_multioutput_data import (
+    example_multioutput_kernel, 
+    generate_multioutput_data,
+    multioutput_kernel,
+    multioutput_kernel_sampled,
+    random_coregionalization_matrix, 
+    sample_multioutput_gp
+)
 from .generate_synthetic_data import generate_synthetic_data
 from .gpkf_estimation import gpkf_estimation
 from .gpkf_prediction import gpkf_prediction
@@ -17,6 +25,8 @@ from .np_pred import np_pred
 
 __all__ = [
     "create_discrete_time_sys",
+    "example_multioutput_kernel",
+    "generate_multioutput_data",
     "generate_synthetic_data",
     "gpkf_estimation",
     "gpkf_prediction",
@@ -26,8 +36,12 @@ __all__ = [
     "kernel_space_time_sampled",
     "load_colorado_data",
     "load_data_set",
+    "multioutput_kernel",
+    "multioutput_kernel_sampled",
     "nonparametric_estimation",
     "nonparametric_prediction",
     "np_est",
     "np_pred",
+    "random_coregionalization_matrix",
+    "sample_multioutput_gp",
 ]

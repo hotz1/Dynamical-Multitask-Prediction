@@ -459,7 +459,7 @@ The Markovian dynamics which impact \Cref{eq:todescato-discretized-state,eq:tode
 
         \Statex \texttt{Kalman estimates:}
         \While{$t_{j+1} \le t$}
-            \State Compute $A(j), C(j), Q(j), R(j)$ per \Crefrange{eq:todescato-discretize-Aj}{eq:todescato-discretize-Rj}
+            \State Compute $A(j), C(j), Q(j), R(j)$ using \Crefrange{eq:todescato-discretize-Aj}{eq:todescato-discretize-Rj}
             \State Apply the Kalman filter (\Cref{alg:kalman-filter}) to compute $\widehat{\bfs}(j+1 \mid j+1)$ and $\bfSigma(j+1 \mid j+1)$
             \State $\widehat{\mathbf{s}}(t) = \widehat{\mathbf{s}}(j+1\mid j+1)$
             \State $\bfSigma^{\bfs}(t)=\bfSigma(j+1\mid j+1)$
@@ -481,7 +481,7 @@ The Markovian dynamics which impact \Cref{eq:todescato-discretized-state,eq:tode
 
 % It should be noted that in practice, the most recent Kalman-filtered state should be maintained in memory so that previous states do not need to be recomputed if subsequent information arrives.
 
-As part of their paper, \citeauthor{Todescato-Efficient-2020} describe and prove their \emph{Dynamic Representer Theorem}; a form of the classic `Representer Theorem' for Gaussian processes which is amenable to the presumed spatiotemporal dynamics in their model. The key  practical result of their Dynamic Representer Theorem is that for any time $t$ beyond the final observation time $t_{J}$, the mean and variance estimates returned by \Cref{alg:todescato-kalman-GP} can be used to derive a minimum-variance estimator of the function $f(x, t)$ at \emph{any} location $x \in \calX$.
+As part of their paper, \citeauthor{Todescato-Efficient-2020} describe and prove a \emph{Dynamic Representer Theorem}; a form of the classic `Representer Theorem' for Gaussian processes (see \Cref{thm:representer-theorem}) which is amenable to the presumed spatiotemporal dynamics in their model. The key  practical result of their Dynamic Representer Theorem is that for any time $t$ beyond the final observation time $t_{J}$, the mean and variance estimates returned by \Cref{alg:todescato-kalman-GP} can be used to derive a minimum-variance estimator of the function $f(x, t)$ at \emph{any} location $x \in \calX$.
 
 Furthermore, the authors demonstrate that the computational complexity of \Cref{alg:todescato-kalman-GP} is of the order $\calO(rMM_{J} + rM_{J}^{3})$ to derive the mean and covariance $\widehat{\bff}(t_{J})$ and $\bfSigma^{\bff}(t_{J})$, with an additional $\calO(MP)$ cost to compute predictions of the form $f(x_{i}, t)$ at the $P$ locations $\{x_{1}, \dots, x_{P}\} \in \calX$.     
 
@@ -491,9 +491,9 @@ Furthermore, the authors demonstrate that the computational complexity of \Cref{
 Now, we may focus on the adaptation of the Kalman-enhanced regression algorithm for a multi-output Gaussian process. In addition to the two previously-stated assumptions on the nature of the dynamical system, we must make one additional assumption regarding the observations in the dynamical model.
 \begin{assumption}[Missingness of Vector-Valued Observations]
 \label{ass:all-or-nothing}
-    For any location $\bfx_{i} \in \calX$ and time $t_{k} \in \bbR^{+}$, the $D$ entries of the response vector $\bfy_{i,k} = f(\bfx_{i}, t_{k}) + \bfv_{i,k}$ will either all be recorded, or all be missing.
+    For any location $\bfx_{i} \in \calX$ and time $t_{k} \in \bbR^{+}$, the $D$ entries of the response vector $\bfy_{i,j} = f(\bfx_{i}, t_{j}) + \bfv_{i,j} \in \bbR^{D}$ will either all be recorded, or all be missing.
 \end{assumption}
-\Cref{ass:all-or-nothing} is a simplifying assumption which ensures that there are not any partially-recorded or partially-unrecorded vectors of information. Such an assumption was absent from the prior paper on this topic, as their algorithm focused solely on scalar-valued responses, so there was no condition under which $y_{i}(t_{j})$ could be partially-observed. 
+\Cref{ass:all-or-nothing} is a simplifying assumption which ensures that there are not any partially-recorded or partially-unrecorded vectors of information. Such an assumption was absent from the prior paper on this topic, as their algorithm focused solely on scalar-valued responses, so it would not be possible for the measurement $\bfy_{i}(t_{j})$ to be partially observed.
 
 \begin{algorithm}
     \caption{Kalman-based MOGP regression on $\calI$ at query time $t \in \bbR^{+}$}
@@ -512,7 +512,7 @@ Now, we may focus on the adaptation of the Kalman-enhanced regression algorithm 
 
         % \Statex \texttt{Kalman estimates:}
         % \While{$t_{j+1} \le t$}
-        %     \State Compute $A(j), C(j), Q(j), R(j)$ per \Crefrange{eq:todescato-discretize-Aj}{eq:todescato-discretize-Rj}
+        %     \State Compute $A(j), C(j), Q(j), R(j)$ using \Crefrange{eq:todescato-discretize-Aj}{eq:todescato-discretize-Rj}
         %     \State Apply the Kalman filter (\Cref{alg:kalman-filter}) to compute $\widehat{\bfs}(j+1 \mid j+1)$ and $\bfSigma(j+1 \mid j+1)$
         %     \State $\widehat{\mathbf{s}}(t) = \widehat{\mathbf{s}}(j+1\mid j+1)$
         %     \State $\bfSigma^{\bfs}(t)=\bfSigma(j+1\mid j+1)$
@@ -602,6 +602,33 @@ All written text in this document has been both verified and re-written by the a
 
 \section{Definitions and Technical Details}
 \label{sec:definitions}
+
+\begin{definition}[Reproducing Kernel Hilbert Space (RKHS)]
+\label{def:rkhs}
+    Let $\calX$ be an indexing set, and let $\calH$ be a Hilbert space of real-valued functions $f: \calX \to \bbR$ equipped with the inner product $\innerprod[\calH]{\cdot}{\cdot}$ and induced norm $\norm[\calH]{\cdot}$. 
+    
+    For every $x \in \calX$, define the evaluation functional $L_{x}: \calH \to \bbR$ such that $L_{x}[f] = f(x)$ for all $f \in \calH$. $\calH$ is an RKHS over $\calX$ if for all $x \in \calX$, the evaluation functional $L_{x}[f] := f(x)$ is a bounded and continuous functional on $\calH$. 
+\end{definition}
+
+\begin{definition}[Reproducing Kernel]
+\label{def:reproducing-kernel}
+    Let $\calH$ be an RKHS over $\calX$ with $\innerprod[\calH]{\cdot}{\cdot}$ and norm $\norm[\calH]{\cdot}$. The function $k: \calX \times \calX \to \bbR$ is the reproducing kernel for $\calH$ if it satisfies the reproducing property:
+    \begin{equation}
+        f(x) = \innerprod[\calH]{f}{k(x, \cdot)}, \quad \forall x \in \calX
+    \end{equation}
+\end{definition}
+
+\begin{theorem}[Representer Theorem]
+\label{thm:representer-theorem}
+    Suppose that we have some dataset $\calD := \{(x_{i}, y_{i})\}_{i=1}^{n}$.
+    \begin{equation}
+        J[f] := \frac{\lambda}{2}\norm[\calH]{f}^{2} + \sum_{i=1}^{n}L\big(y_{i}, f(x_{i})\big),
+    \end{equation}
+    where $\lambda$ is a regularization parameter, and $L$ is some loss function. Let $\calH_{k}$ be an RKHS with reproducing kernel $k$. The Representer Theorem states that the minimizer $f^{*}(x)$ satisfies
+    \begin{equation}
+        f^{*}(x) = \argmin_{f \in \calH_{k}}J[f] = \sum_{i=1}^{n}\alpha_{i}k(x, x_{i})
+    \end{equation}
+\end{theorem}
 
 \begin{definition}[Power Spectral Density]
 \label{def:power-spectrum}

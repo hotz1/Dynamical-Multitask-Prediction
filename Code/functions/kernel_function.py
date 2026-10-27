@@ -76,8 +76,10 @@ def kernel_function(params, active_dims=None):
     ----------
     params : dict
         Kernel parameters. Must contain "type" ("matern", "gaussian" or
-        "periodic") and the parameters specific to that type ("scale", "std",
-        "nu") for the Matern kernel, ("std", "scale") for the Gaussian kernel, and ("scale", "frequency") for the periodic kernel).
+        "periodic") and the parameters specific to that type.
+            Matern kernel needs ("scale", "std", "nu")
+            Gaussian kernel needs ("scale", "std", "nu")
+            Periodic kernel needs ("scale", "std", "frequency")
     active_dims : sequence of int, optional
         Input columns the kernel acts on (used by `multioutput_kernel_function`).
 

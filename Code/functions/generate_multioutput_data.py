@@ -174,8 +174,11 @@ def sample_multioutput_gp(space_locs, time_instants, kernel, rng=None):
     return F
 
 
-def generate_multioutput_data(param, rng=None, missing="joint"):
+def generate_multioutput_data(param, rng=None, missing_prob=0.0):
     """Sample a multi-output spatio-temporal GP and noisy, partially missing measurements.
+
+    Each observation vector y(x, t) in R^D is either fully recorded or fully missing.
+    A location is never observed for some (but not all) of the outputs.
 
     Parameters
     ----------
@@ -185,13 +188,10 @@ def generate_multioutput_data(param, rng=None, missing="joint"):
         "kernel" is a multi-output kernel from `multioutput_kernel`.
         "noiseStd" may be a scalar or a length-D array (one per output).
     rng : numpy.random.Generator, optional
-    missing : {"joint", "independent", "none"}, optional
-        How measurements are deleted at each time instant, following
-        generateSyntheticData.m (a random number between 1 and the number of
-        measured locations is removed):
-          "joint"       : the same locations are missing for every output;
-          "independent" : missing locations are drawn separately per output;
-          "none"        : no measurements are removed.
+    missing_prob : float in [0, 1], optional
+        Probability that the measurement vector at a given (measured location,
+        time instant) pair is unrecorded, independently over pairs. All D
+        outputs are removed together. 0 keeps every measurement.
 
     Returns
     -------
@@ -203,6 +203,8 @@ def generate_multioutput_data(param, rng=None, missing="joint"):
         Measurement noise variances, +inf where missing.
     """
     rng = np.random.default_rng() if rng is None else rng
+    if not (0.0 <= missing_prob <= 1.0):
+        raise ValueError(f"generate_multioutput_data: missing_prob should be in [0, 1], got {missing_prob}")
 
     # sample "true" (zero mean) GP (axes: space, output, time)
     F = sample_multioutput_gp(param["spaceLocs"], param["timeInstants"], param["kernel"], rng)
@@ -215,17 +217,10 @@ def generate_multioutput_data(param, rng=None, missing="joint"):
     noise_var = np.broadcast_to((noise_std**2)[None, :, None], (num_space_locs_meas, num_outputs, num_time_inst)).copy()
     Y = F[meas_idx] + np.sqrt(noise_var) * rng.standard_normal(noise_var.shape)
 
-    # delete (randomly) some measurements and update the noise variance
-    if missing not in ("joint", "independent", "none"):
-        raise ValueError(f"generate_multioutput_data: unknown missing pattern '{missing}'")
-    if missing != "none":
-        outputs = [slice(None)] if missing == "joint" else range(num_outputs)
-        for t in range(num_time_inst):
-            for d in outputs:
-                num_missing = rng.integers(1, num_space_locs_meas + 1)
-                idx = np.sort(rng.choice(num_space_locs_meas, size=num_missing, replace=False))
-                Y[idx, d, t] = np.nan
-                noise_var[idx, d, t] = np.inf
+    # delete (randomly) some measurement vectors, all outputs together, and update the noise variance
+    is_missing = rng.random((num_space_locs_meas, num_time_inst)) < missing_prob
+    Y[is_missing[:, None, :].repeat(num_outputs, axis=1)] = np.nan
+    noise_var[np.isnan(Y)] = np.inf
 
     return F, Y, noise_var
 

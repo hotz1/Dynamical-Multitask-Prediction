@@ -13,9 +13,9 @@ Four models are available, each representing a special case of this sum:
 A multi-output kernel is described by a dict
 
     {"model": "icm",
-     "components": [{"space": {...}, "time": {...}, "B": (D, D) array}, ...]}
+     "components": [{"space_par": {...}, "time_par": {...}, "B": (D, D) array}, ...]}
 
-where "space" and "time" are kernel parameter dicts as used by
+where "space_par" and "time_par" are kernel parameter dicts as used by
 `kernel_function`. `multioutput_kernel` builds such a dict and checks that it
 matches the requested model.
 
@@ -229,14 +229,14 @@ def example_multioutput_kernel(model, num_outputs=3, num_components=2, rng=None)
     """Returns an example multi-output kernel for `model`, for quick simulations.
 
     The spatial and time kernels use the synthetic settings of
-    `load_parameters` (gaussian space, exponential time). For the LMC models
+    `load_parameters` (gaussian space, Matern-1/2 time). For the LMC models
     the q-th term has spatial length-scale q + 1 (and, for "lmc_time", the
-    time kernel alternates between exponential and periodic), so the terms act
+    time kernel alternates between Matern-1/2 and periodic), so the terms act
     on different scales.
     """
     rng = np.random.default_rng() if rng is None else rng
     space = {"type": "gaussian", "scale": 1.0, "std": 1.0}
-    time = {"type": "exponential", "scale": 1.0, "std": 1.0}
+    time = {"type": "matern", "nu": 0.5, "scale": 1.0, "std": 1.0}
 
     if model == "independent":
         return multioutput_kernel(model, rng.uniform(0.5, 1.5, num_outputs), space, time)
@@ -248,7 +248,7 @@ def example_multioutput_kernel(model, num_outputs=3, num_components=2, rng=None)
     if model == "lmc":
         return multioutput_kernel(model, Bs, spaces, time)
     times = [
-        {"type": "exponential", "scale": 1.0, "std": float(q + 1)} if q % 2 == 0
+        {"type": "matern", "nu": 0.5, "scale": 1.0, "std": float(q + 1)} if q % 2 == 0
         else {"type": "periodic", "scale": 1.0, "std": float(q + 1), "frequency": 0.25}
         for q in range(num_components)
     ]

@@ -29,9 +29,9 @@ from main import evaluate_results, run_estimators
 # "meas_fraction", "noise_std", "end_time").
 GRID = {
     "model": ["independent", "icm", "lmc", "lmc_time"],
-    "num_outputs": [1, 2, 3],
+    "num_outputs": [1, 2, 3, 5],
     "missing_prob": [0, 0.2, 0.5],
-    "num_locs": [100],
+    "num_locs": [250],
 }
 NUM_COMPONENTS = 2          # Q for the LMC models
 LOAD_PARAMETERS_KWARGS = {}  # load_parameters arguments fixed across the study, e.g. {"noise_std": 0.3}
@@ -63,7 +63,7 @@ def run_study(reps, seed, out_path, batch=True, redraw_kernel=False):
 
             results = run_estimators(params, Y, noise_var, batch=batch)
             rows = pd.DataFrame(evaluate_results(params, F, results))
-            rows["neg_log_marginal"] = np.where(rows["method"] == "gpkf", results["negLogMarginalKf"], np.nan)
+            # rows["neg_log_marginal"] = np.where(rows["method"] == "gpkf", results["negLogMarginalKf"], np.nan)
             meta = {"setting_id": setting_id, **setting, "num_components": NUM_COMPONENTS, "rep": rep,
                     "missing_frac": np.isnan(Y[:, 0, :]).mean()}
             rows = pd.concat([pd.DataFrame([meta] * len(rows)), rows], axis=1)

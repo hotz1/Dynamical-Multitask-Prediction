@@ -15,8 +15,15 @@ import time
 
 import numpy as np
 
-from functions import (evaluate, generate_multioutput_data, gpkf_estimation, gpkf_prediction,
-                       marginal_variances, nonparametric_estimation, nonparametric_prediction)
+from functions import (
+    evaluate, 
+    generate_multioutput_data,
+    gpkf_estimation, 
+    gpkf_prediction,
+    marginal_variances, 
+    nonparametric_estimation, 
+    nonparametric_prediction
+)
 from load_parameters import load_parameters
 
 

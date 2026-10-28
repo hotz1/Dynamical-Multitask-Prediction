@@ -36,6 +36,7 @@ def evaluate(truth, mean, var, level=0.95):
         One dict per output d (with "output" = d) and one pooled over outputs
         (with "output" = "all"), each holding
           rmse     : root mean squared error of the posterior mean;
+          mad      : mean absolute deviation of the posterior mean;
           coverage : fraction of true values inside the central `level` interval;
           mean_var : average posterior variance;
           nlpd     : average negative log posterior density of the true values.
@@ -44,11 +45,21 @@ def evaluate(truth, mean, var, level=0.95):
     z = norm.ppf(0.5 + level / 2)
     err = truth - mean
     inside = np.abs(err) <= z * np.sqrt(var)
-    nlpd = 0.5 * (np.log(2 * np.pi * var) + err**2 / var)
+    # nlpd = 0.5 * (np.log(2 * np.pi * var) + err**2 / var)
 
+    # def summary(sl, label):
+    #     return {"output": label, 
+    #             "rmse": np.sqrt(np.mean(err[sl] ** 2)), 
+    #             "mad": np.mean(np.abs(err[sl])),
+    #             "coverage": inside[sl].mean(),
+    #             "mean_var": var[sl].mean(), 
+    #             "nlpd": nlpd[sl].mean()}
     def summary(sl, label):
-        return {"output": label, "rmse": np.sqrt(np.mean(err[sl] ** 2)), "coverage": inside[sl].mean(),
-                "mean_var": var[sl].mean(), "nlpd": nlpd[sl].mean()}
+        return {"output": label, 
+                "rmse": np.sqrt(np.mean(err[sl] ** 2)), 
+                "mad": np.mean(np.abs(err[sl])),
+                "coverage": inside[sl].mean(),
+                "mean_var": var[sl].mean()}
 
     rows = [summary((slice(None), d), d) for d in range(truth.shape[1])]
     rows.append(summary(slice(None), "all"))

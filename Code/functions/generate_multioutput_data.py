@@ -230,7 +230,7 @@ def generate_multioutput_data(param, rng=None, missing_frac=0.0):
     return F, Y, noise_var
 
 
-def example_multioutput_kernel(model, num_outputs=3, num_components=2, rng=None):
+def example_multioutput_kernel(model, num_outputs=3, num_components=3, rng=None):
     """Returns an example multi-output kernel for `model`, for quick simulations.
 
     The spatial and time kernels use the synthetic settings of
@@ -249,12 +249,8 @@ def example_multioutput_kernel(model, num_outputs=3, num_components=2, rng=None)
         return multioutput_kernel(model, random_coregionalization_matrix(num_outputs, rng=rng), space, time)
 
     Bs = [random_coregionalization_matrix(num_outputs, rank=1, kappa=0.05, rng=rng) for _ in range(num_components)]
-    spaces = [{"type": "gaussian", "scale": 1.0, "std": float(q + 1)} for q in range(num_components)]
+    spaces = [{"type": "matern", "nu": (2.5, 1.5, 0.5)[q % 3], "scale": 1.0, "std": float(q // 3 + 1)} for q in range(num_components)]
     if model == "lmc":
         return multioutput_kernel(model, Bs, spaces, time)
-    times = [
-        {"type": "matern", "nu": 0.5, "scale": 1.0, "std": float(q + 1)} if q % 2 == 0
-        else {"type": "periodic", "scale": 1.0, "std": float(q + 1), "frequency": 0.25}
-        for q in range(num_components)
-    ]
+    times = [{"type": "matern", "nu": 0.5, "scale": 1.0, "std": float(q + 1)} for q in range(num_components)]
     return multioutput_kernel(model, Bs, spaces, times)

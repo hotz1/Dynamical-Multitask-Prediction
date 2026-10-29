@@ -174,7 +174,7 @@ def sample_multioutput_gp(space_locs, time_instants, kernel, rng=None):
     return F
 
 
-def generate_multioutput_data(param, rng=None, missing_prob=0.0):
+def generate_multioutput_data(param, rng=None, missing_frac=0.0):
     """Sample a multi-output spatio-temporal GP and noisy, partially missing measurements.
 
     Each observation vector y(x, t) in R^D is either fully recorded or fully missing.
@@ -188,10 +188,12 @@ def generate_multioutput_data(param, rng=None, missing_prob=0.0):
         "kernel" is a multi-output kernel from `multioutput_kernel`.
         "noiseStd" may be a scalar or a length-D array (one per output).
     rng : numpy.random.Generator, optional
-    missing_prob : float in [0, 1], optional
-        Probability that the measurement vector at a given (measured location,
-        time instant) pair is unrecorded, independently over pairs. All D
-        outputs are removed together. 0 keeps every measurement.
+    missing_frac : float in [0, 1), optional
+        Fraction of measurement vectors that are unrecorded. 
+        Unrecorded observations are chosen uniformly at random without replacement, 
+        so it is possible for a time instant to lose any number of locations. 
+        All D outputs are removed together, instead of partial observations occurring.
+        missing_frac of 0 keeps all measurements intact.
 
     Returns
     -------
@@ -203,8 +205,8 @@ def generate_multioutput_data(param, rng=None, missing_prob=0.0):
         Measurement noise variances, +inf where missing.
     """
     rng = np.random.default_rng() if rng is None else rng
-    if not (0.0 <= missing_prob <= 1.0):
-        raise ValueError(f"generate_multioutput_data: missing_prob should be in [0, 1], got {missing_prob}")
+    if not (0.0 <= missing_frac < 1.0):
+        raise ValueError(f"generate_multioutput_data: missing_frac should be in [0, 1), got {missing_frac}")
 
     # sample "true" (zero mean) GP (axes: space, output, time)
     F = sample_multioutput_gp(param["spaceLocs"], param["timeInstants"], param["kernel"], rng)
@@ -218,7 +220,10 @@ def generate_multioutput_data(param, rng=None, missing_prob=0.0):
     Y = F[meas_idx] + np.sqrt(noise_var) * rng.standard_normal(noise_var.shape)
 
     # delete (randomly) some measurement vectors, all outputs together, and update the noise variance
-    is_missing = rng.random((num_space_locs_meas, num_time_inst)) < missing_prob
+    num_pairs = num_space_locs_meas * num_time_inst
+    is_missing = np.zeros(num_pairs, dtype=bool)
+    is_missing[rng.choice(num_pairs, size=int(missing_frac * num_pairs), replace=False)] = True
+    is_missing = is_missing.reshape(num_space_locs_meas, num_time_inst)
     Y[is_missing[:, None, :].repeat(num_outputs, axis=1)] = np.nan
     noise_var[np.isnan(Y)] = np.inf
 

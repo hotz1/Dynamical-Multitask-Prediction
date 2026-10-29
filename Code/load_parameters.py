@@ -17,8 +17,8 @@ from functions.time_state_space import time_kernel_coefficients
 
 
 def load_parameters(model="icm", num_outputs=3, num_components=2, kernel=None, rng=None,
-                    num_locs=100, meas_fraction=0.8, sampling_time=0.5, start_time=0.0, end_time=10.0,
-                    noise_std=0.5, missing_prob=0.5):
+                    num_locs=100, meas_fraction=0.8, end_time=10.0, sampling_time=0.5, start_time=0.0,
+                    noise_std=0.5, missing_frac=0.5):
     """Return the simulation parameters.
 
     Parameters
@@ -37,12 +37,15 @@ def load_parameters(model="icm", num_outputs=3, num_components=2, kernel=None, r
     num_locs, meas_fraction : int, float, optional
         Number of locations on the grid 1, ..., num_locs, and the fraction of
         them that is measured (the rest are prediction locations).
-    sampling_time, start_time, end_time : float, optional
-        Time grid.
+    end_time, sampling_time, start_time : float, optional
+        Time grid start_time, start_time + sampling_time, ..., end_time
+        (0, 0.5, ..., 10 with the defaults). end_time - start_time must be a
+        whole number of time steps.
     noise_std : float or array_like, shape (D,), optional
         Measurement noise standard deviation(s).
-    missing_prob : float, optional
-        Probability that a measurement vector is unrecorded.
+    missing_frac : float, optional
+        Fraction of measurement vectors (measured location, time instant pairs)
+        that are unrecorded (see `generate_multioutput_data`).
 
     Returns
     -------
@@ -67,7 +70,7 @@ def load_parameters(model="icm", num_outputs=3, num_components=2, kernel=None, r
         "startTime": start_time,
         "endTime": end_time,
         "noiseStd": noise_std,
-        "missingProb": missing_prob,
+        "missingFrac": missing_frac,
         "kernel": kernel,
     }
 
@@ -77,7 +80,10 @@ def load_parameters(model="icm", num_outputs=3, num_components=2, kernel=None, r
     data["spaceLocsMeas"] = data["spaceLocs"][data["spaceLocsMeasIdx"], :]
     data["spaceLocsPredIdx"] = np.setdiff1d(data["spaceLocsIdx"], data["spaceLocsMeasIdx"])
     data["spaceLocsPred"] = data["spaceLocs"][data["spaceLocsPredIdx"], :]
-    num_times = int(round((end_time - start_time) / sampling_time)) + 1
-    data["timeInstants"] = start_time + sampling_time * np.arange(num_times)
+    num_steps = (end_time - start_time) / sampling_time
+    if not np.isclose(num_steps, round(num_steps)) or round(num_steps) < 0:
+        raise ValueError(f"load_parameters: end_time - start_time = {end_time - start_time} is not a whole "
+                         f"number of time steps of {sampling_time}")
+    data["timeInstants"] = start_time + sampling_time * np.arange(round(num_steps) + 1)
 
     return {"data": data, "np": {"kernel": copy.deepcopy(kernel)}, "gpkf": {"kernel": copy.deepcopy(kernel)}}

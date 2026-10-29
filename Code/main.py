@@ -7,7 +7,7 @@ are the case D = 1.
 
 Usage:
     python main.py [--model {independent,icm,lmc,lmc_time}] [--outputs D] [--components Q]
-                   [--missing-prob P] [--seed SEED] [--no-batch] [--no-plots]
+                   [--missing-frac P] [--locs N] [--end-time E] [--time-step TS] [--seed SEED] [--no-batch] [--no-plots]
 """
 
 import argparse
@@ -76,15 +76,21 @@ def evaluate_results(params, F, results):
     return rows
 
 
-def run(model="icm", num_outputs=3, num_components=2, missing_prob=0.5, seed=None, batch=True):
-    """Generate one data set, run the estimators and return params, data and results."""
+def run(model="icm", num_outputs=3, num_components=2, missing_frac=0.5, num_locs=100, end_time=10.0,
+        time_step=0.5, seed=None, batch=True):
+    """Generate one data set, run the estimators and return params, data and results.
+
+    The data have `num_locs` locations (80% measured) and time instants
+    0, `time_step`, ..., `end_time`.
+    """
     rng = np.random.default_rng(seed)
 
     # load necessary parameters
-    params = load_parameters(model, num_outputs, num_components, rng=rng, missing_prob=missing_prob)
+    params = load_parameters(model, num_outputs, num_components, rng=rng, missing_frac=missing_frac,
+                             num_locs=num_locs, end_time=end_time, sampling_time=time_step)
 
     # generate data
-    F, Y, noise_var = generate_multioutput_data(params["data"], rng, missing_prob=params["data"]["missingProb"])
+    F, Y, noise_var = generate_multioutput_data(params["data"], rng, missing_frac=params["data"]["missingFrac"])
 
     return params, F, Y, noise_var, run_estimators(params, Y, noise_var, batch=batch)
 
@@ -94,25 +100,29 @@ def main():
     parser.add_argument("--model", choices=["independent", "icm", "lmc", "lmc_time"], default="icm")
     parser.add_argument("--outputs", type=int, default=3, help="number of outputs D")
     parser.add_argument("--components", type=int, default=2, help="number of LMC terms Q")
-    parser.add_argument("--missing-prob", type=float, default=0.5, help="probability a measurement vector is missing")
+    parser.add_argument("--missing-frac", type=float, default=0.5, help="fraction of measurement vectors that are missing")
+    parser.add_argument("--locs", type=int, default=100, help="number of locations (80%% are measured)")
+    parser.add_argument("--end-time", "--end_time", type=float, default=10.0, help="last time instant")
+    parser.add_argument("--time-step", "--time_step", type=float, default=0.5,
+                        help="sampling time Ts (time instants 0, Ts, ..., end time)")
     parser.add_argument("--seed", type=int, default=None, help="random seed for reproducibility")
     parser.add_argument("--no-batch", action="store_true", help="skip the batch GP (slow for large problems)")
     parser.add_argument("--no-plots", action="store_true", help="skip the figures")
     args = parser.parse_args()
 
-    params, F, Y, noise_var, results = run(args.model, args.outputs, args.components, args.missing_prob,
-                                           args.seed, batch=not args.no_batch)
+    params, F, Y, noise_var, results = run(args.model, args.outputs, args.components, args.missing_frac,
+                                           args.locs, args.end_time, args.time_step, args.seed,
+                                           batch=not args.no_batch)
 
     data = params["data"]
     print(f"Model: {data['model']}, D = {data['numOutputs']}, "
           f"{len(data['spaceLocsMeasIdx'])} measured / {len(data['spaceLocsPredIdx'])} unmeasured locations, "
           f"T = {len(data['timeInstants'])}, missing fraction = {np.isnan(Y[:, 0, :]).mean():.2f}")
-    print(f"  GPKF negative log marginal lik.: {results['negLogMarginalKf']:.4f}")
-    print(f"  {'method':<6} {'task':<11} {'RMSE':>8} {'cover95':>8} {'NLPD':>8} {'time [s]':>9}")
+    print(f"  {'method':<6} {'task':<11} {'RMSE':>8} {'MAE':>8} {'cover95':>8} {'time [s]':>9}")
     for row in evaluate_results(params, F, results):
         if row["output"] == "all":
-            print(f"  {row['method']:<6} {row['task']:<11} {row['rmse']:8.4f} {row['coverage']:8.3f} "
-                  f"{row['nlpd']:8.4f} {row['wall_time']:9.3f}")
+            print(f"  {row['method']:<6} {row['task']:<11} {row['rmse']:8.4f} {row['mae']:8.4f} {row['coverage']:8.3f} "
+                  f"{row['wall_time']:9.3f}")
 
     # plotting some results
     if not args.no_plots:

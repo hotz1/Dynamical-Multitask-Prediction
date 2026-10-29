@@ -574,7 +574,9 @@ In this paper, we focus on developing a method for deriving estimates of a spati
 
 \subsection{Future Work}
 
+One potential area of continued algorithmic research related to this project is to examine the use of smoothing distributions such as the Rauch-Tung-Striebel (RTSS) smoother \citep{Rauch-RTSS-1965,Bayesian-Filter-Book-2023} or modified Bryson-Frazier smoother \citep{Colemont-MBF-Smoothing-2026}. The primary use of these smoothing distributions is to develop estimates for the latent states $f(x_{i}, t_{j})$ at \emph{any} observation time $t_{k}$ instead of solely performing inference on the latent states corresponding to the latest-observed measurements. The RTSS has been shown \citet{Hartikainen-Smoothing-GP-2010,Sarkka-Spatial-Kalman-2012} to be closely related to temporal Gaussian processes, which can enable the use of smoothers for the multi-output Gaussian process problems considered in this work.
 
+Another related task of future interest is to examine the possibility of working with dynamical systems whose transformations are governed by unknown parameters. In this work, we have focused on dynamical systems where the mechanics underpinning the evolution of the system over time are fully known. However, this is a reductive assumption, which may be improved upon through...
 
 % \bigskip
 % \bigskip

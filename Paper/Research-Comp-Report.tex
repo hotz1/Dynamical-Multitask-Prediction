@@ -15,13 +15,13 @@
 \input{../tex-macros/math-macros.tex}
 \input{../tex-macros/math-alphabets-ams.tex}
 
-% \newtheorem{theorem}{Theorem}[section]
-% \newtheorem{definition}{Definition}[section]
-% \newtheorem{assumption}{Assumption}[section]
-% \numberwithin{equation}{section}
-\newtheorem{theorem}{Theorem}
-\newtheorem{definition}{Definition}
-\newtheorem{assumption}{Assumption}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}{Definition}[section]
+\newtheorem{assumption}{Assumption}[section]
+\numberwithin{equation}{section}
+% \newtheorem{theorem}{Theorem}
+% \newtheorem{definition}{Definition}
+% \newtheorem{assumption}{Assumption}
 
 \usepackage{hyperref}
 \usepackage[nameinlink]{cleveref}
@@ -108,15 +108,17 @@
 
 Gaussian processes (GPs) are an `industry standard' procedure for modelling the values of unknown functions, especially in scenarios where there are noisy or otherwise unreliable measurements and/or correlations in the data which must be accounted for \citep{GPML-Book-2006}. 
 
-Gaussian process regression, also commonly referred to in the literature as \emph{kriging} after the South African geostatistician Danie G. Krige \citep{Cressie-Origins-1990}, is a statistical modelling procedure wherein a finite collection of observations are used for learning the form of an unknown real-valued function. Gaussian processes are particularly useful when there are correlations among observations, as these models can leverage information from correlated data to reduce the variance of outputs in the estimated function. Furthermore, the equations for fitting a GP to a dataset have computable closed-form solutions. Due to these convenient properties, Gaussian processes are frequently used in a variety of practical statistical applications involving spatiotemporal datasets, ranging from geostatistics and climatology to fields such as electrical engineering and signal processing \citep{Sarkka-Spatial-Kalman-2012,Huang-Nonstationary-2025}.
+Gaussian process regression, also commonly referred to in the literature as \emph{kriging} after the South African geostatistician Danie G. Krige \citep{Cressie-Origins-1990}, is a statistical modelling procedure wherein a finite collection of observations are used for learning the form of an unknown real-valued function. Gaussian processes are particularly useful when there are correlations among observations, as these models can leverage information from correlated data to reduce the variance of outputs in the estimated function. Furthermore, the equations for fitting a GP to a dataset have computable closed-form solutions. Due to these convenient properties, Gaussian processes are frequently used in a variety of practical statistical applications involving modelling spatiotemporal data, particularly when we aim to learn certain functional properties of the underlying data.
 
-Although Gaussian processes are mathematically tractable and convenient to use, there is one major drawback to these models: exact inference with Gaussian processes has a cubically-scaling computational overhead. Fitting a Gaussian process on a set of $N$ observations is a process which requires $\calO(N^{3})$ operations \citep{GPML-Book-2006}, making these regression problems infeasible for many large-scale datasets \citep{Guhaniyogi-Meta-Kriging-2018,Pfoertner-Comp-Aware-2025,Salari-GP-Turbines-2025}.
+Although Gaussian processes are mathematically tractable and convenient to use, there is one \emph{major} drawback to these models: exact inference with Gaussian processes has a cubically-scaling computational overhead. Fitting a Gaussian process onto a dataset which contains $M$ observations is a procedure requiring $\calO(M^{3})$ floating point operations \citep{GPML-Book-2006}, making these regression problems infeasible for many large-scale datasets \citep{Guhaniyogi-Meta-Kriging-2018,Pfoertner-Comp-Aware-2025,Salari-GP-Turbines-2025}. For instance, fitting a Gaussian process on a `moderately-sized' dataset of 1000 observations would involve $\calO(10^{9})$ floating point operations. In applied scenarios involving spatiotemporal modelling where there are repeated measurements, the complexity of Gaussian process regression will scale with the cube of the number of locations \emph{and} measurements per location, which may quickly extend beyond the scope of feasible calculation.
+
+Furthermore, statistical modelling with Gaussian processes requires choosing a spatiotemporal covariance model which yields a positive semi-definite matrix on \emph{any} set of inputs \citep{GPML-Book-2006}. The class of valid covariance functions for a Gaussian process are mathematically convenient to work with in such regression contexts, but Gaussian process regression does impose further restrictions on how we choose to represent the covariance among observations in a spatiotemporal data setting. 
 
 Due to these computational difficulties, many statisticians and machine learning researchers have sought to develop algorithms for fitting a Gaussian process with reduced computational overhead. Prominent well-studied and broadly applicable methods for accomplishing this task include approximations using induced latent variables \citep{Quinonero-Sparse-GP-2005}, sparse variational Gaussian processes \citep{Titsias-SVGP-2009}, and Vecchia approximations \citep{Katzfuss-Vecchia-2021}. However, these methods all require some degree of approximation, trading the exactness of a solution for increased algorithmic efficiency. 
 
 In their 2020 paper \emph{Efficient spatio-temporal Gaussian regression via Kalman filtering}, \citeauthor{Todescato-Efficient-2020} introduce a new algorithm for efficiently deriving estimates of the future states in a spatio-temporal dynamical system under certain assumptions for the covariance structure between observations. The algorithm proposed by the authors utilizes Gaussian process regression in tandem with the Kalman filter, providing the ability to account for both the spatial and temporal aspects which guide the `evolution' of the dynamical system while simultaneously reducing the overall computational load. 
 
-This paper provides a detailed overview of the results in \citet{Todescato-Efficient-2020} and subsequently builds upon the scaffolding in the authors' work by amending their proposed algorithm to operate with vector-valued outputs instead of being confined to scalar responses. This extension to multivariate response vectors provides many practical benefits, as there are many scientific research areas which utilize spatiotemporal models to account for the relationships between a set of correlated response variables.
+This paper provides a detailed overview of the results in \citet{Todescato-Efficient-2020} and subsequently builds upon the scaffolding in the authors' work by amending their proposed algorithm to operate with vector-valued outputs instead of being confined to scalar responses. This extension to multivariate response vectors provides many practical benefits, as there are many scientific research areas ranging from geostatistics and climatology to fields such as electrical engineering and signal processing \citep{Sarkka-Spatial-Kalman-2012,Huang-Nonstationary-2025} which utilize spatiotemporal models to account for the relationships between correlated response variables.
 
 \section{Background}
 \label{sec:background}
@@ -320,11 +322,11 @@ In such cases, the standard method for recovering the parameters describing the 
             \Statex \hspace{\algorithmicindent} $\widehat{\bfm}(0 \mid -1)$: expected value of the initial state $\bfs(0)$       
             \Statex \hspace{\algorithmicindent} $\bfSigma(0 \mid -1)$: variance of the initial latent state $\bfs(0)$
         \For{$j = 1$ to $J$}
-            \Statex \texttt{Prediction Step:}
+            \Statex \texttt{\# Prediction Step:}
             \State $\widehat{\bfm}(j \mid j-1) = \bfA(j-1)\widehat{\bfm}(j-1 \mid j-1)$
             \State $\bfSigma(j \mid j-1) = \bfA(j-1)\bfSigma(j-1 \mid j-1)\bfA(j-1)^{\sfTsmall} + \bfQ(j-1)$
 
-            \Statex \texttt{Update Step:}
+            \Statex \texttt{\# Update Step:}
             \State $\bfd(j) = \bfy(j) - \bfC(j)\widehat{\bfm}(j \mid j-1)$
             \State $\bfS(j) = \bfC(j)\bfSigma(j \mid j-1)\bfC(j)^{\sfTsmall} + \bfR(j)$
             \State $\bfK(j) = \bfSigma(j \mid j-1)\bfC(j)^{\sfTsmall}\bfS(j)^{-1}$ \Comment{Kalman gain}
@@ -367,7 +369,6 @@ The ultimate goal of the algorithm proposed by \citeauthor{Todescato-Efficient-2
     The kernel function $K$ representing the covariance of the univariate GP $f(x, t)$ can be separated into the product of a temporal and spatial kernel,
     \begin{equation}
     \label{eq:GP-kernel-sep}
-        % K((x, t), (x', t')) = K_{s}(x, x')\gamma(\abs{t - t'})
         K((x, t), (x', t')) = K_{s}(x, x')\gamma(\tau), \quad \textrm{where}\: \tau := \abs{t - t'}
     \end{equation}
 \end{assumption}
@@ -379,9 +380,40 @@ The ultimate goal of the algorithm proposed by \citeauthor{Todescato-Efficient-2
 
 The separability requirement enforced by \Cref{ass:todescato-kernel-sep} restricts the class of kernel functions which can be used for describing the covariance structure of the Gaussian process. However, this assumption is not overly restrictive in practice, and the family of kernels meeting this criterion remains quite flexible. Similarly, \Cref{ass:todescato-psd-order} does not excessively confine the options for temporal kernels in the Gaussian process, as many commonly-used kernels such as the Mat{\'e}rn covariance family satisfy this requirement of the power spectrum \citep{GPML-Book-2006}.
 
-In order to apply the Kalman filter, the algorithm proposed by \citeauthor{Todescato-Efficient-2020} relies on a discretized state-space representation of the dynamical process which guides the evolution of the function $f(x, t)$. In many applied settings, the dynamical system which is desired evolves according to a continuous-time process. However, the measurement model is based on discrete-time observations. To overcome this distinction, the authors introduce a discretized state-space representation of the underlying continuous-time dynamics which guide the `true' growth of the system. 
+In order to apply the Kalman filter, the algorithm proposed by \citeauthor{Todescato-Efficient-2020} relies on a discretized state-space representation of the dynamical process which guides the evolution of the function $f(x, t)$. In many applied settings, the dynamical system which is desired evolves according to a continuous-time process. However, the measurement model is based on discrete-time observations. To overcome this distinction, the authors introduce a discretized state-space representation of the underlying continuous-time dynamics which guide the `true' growth of the stochastic dynamical system of interest.
 
-For any time instance $t_{j}$ where measurements are recorded, let $\tau_{j} := t_{j} - t_{j-1}$. Additionally, let the three matrices $F \in \bbR^{r \times r}, G \in \bbR^{r \times 1}$ and $H \in \bbR^{1 \times r}$ be the model matrices which collectively form a state-space representation for the spectral density $S(\omega)$ \citep{Carron-ML-Kalman-2016,Bayesian-Filter-Book-2023}, and let $\overline{K}_{s} \in \bbR^{M \times M}$ be the Gram matrix for the spatial kernel $K_{s}$ applied to $\calI$. The spatiotemporal dynamics for the desired system are discretized by the following pair of equations, which guide the evolution from one observation time to the next:
+For any time instance $t_{j}$ where measurements are recorded, let $\tau_{j} := t_{j} - t_{j-1}$. Additionally, let the three matrices $F \in \bbR^{r \times r}, G \in \bbR^{r \times 1}$ and $H \in \bbR^{1 \times r}$ be the model matrices which collectively form a state-space representation for the spectral density $S(\omega)$, as described by \citeauthor{Carron-ML-Kalman-2016} and \Cref{thm:spectral-factor}.
+\begin{definition}[Companion Form Matrices]
+\label{def:companion-matrices}
+    Suppose $S(\omega)$ is a rational power spectral decomposition for the covariance function $\gamma(\tau)$ with order $2r$. Let $S(\omega)$ have the spectral factorization (see \Cref{thm:spectral-factor}) $S(\omega) = W(\bmi\omega)W(-\bmi\omega)$, where 
+    \begin{equation}
+        W(\bmi\omega) := \frac{b_{r-1}(\bmi\omega)^{r-1} + b_{r-2}(\bmi\omega)^{r-2} + \cdots + b_{0}}{(\bmi\omega)^{r} + a_{r-1}(\bmi\omega)^{r-1} + \cdots + a_{0}},
+    \end{equation}
+    as in \Cref{eq:spectral-factor}. The companion form model matrices corresponding to the PSD $S(\omega)$ are the following:
+    \begin{subequations}
+        \label{eq:companion-model-matrices}
+        \begin{align}
+            F &= \begin{bmatrix}
+                0 & 1 & 0 & \cdots & 0\\
+                0 & 0 & 1 & \cdots & 0\\
+                \vdots & \vdots & \vdots & \ddots & \vdots\\
+                0 & 0 & 0 & \cdots & 1\\
+                -a_{0} & -a_{1} & -a_{2} & \cdots & -a_{r-1}
+            \end{bmatrix} \in \bbR^{r \times r} \label{eq:companion-model-matrix-F}\\
+            G &= \begin{bmatrix}
+                0 & 0 & 0 & \cdots & 1
+            \end{bmatrix}^{\sfT} \in \bbR^{r \times 1} \label{eq:companion-model-matrix-G}\\
+            H &= \begin{bmatrix}
+                b_0 & b_{1} & b_{2} & \cdots & b_{r-1}
+            \end{bmatrix} \in \bbR^{1 \times r} \label{eq:companion-model-matrix-H}
+        \end{align}
+    \end{subequations}
+\end{definition}
+
+
+
+
+Let $\overline{K}_{s} \in \bbR^{M \times M}$ be the Gram matrix for the spatial kernel $K_{s}$ applied to $\calI$. The spatiotemporal dynamics for the desired system are discretized by the following pair of equations, which guide the evolution from one observation time to the next:
 \begin{subequations}
     \label{eq:todescato-discrete-evolution}
     \begin{align}
@@ -389,63 +421,23 @@ For any time instance $t_{j}$ where measurements are recorded, let $\tau_{j} := 
         \bfy(j) &= C(j)\bfs(j) + \bfv(j), \quad \bfv(j) \sim \calN(0, R(j)) \label{eq:todescato-discretized-measure}
     \end{align}
 \end{subequations}
-The Markovian dynamics which impact \Cref{eq:todescato-discretized-state,eq:todescato-discretized-measure} are parametrized by the following matrices. These matrices are indexed by the observations, but the only manner in which they differ across observation times is through changes to the location set $\calM_{j} \subset \calI$. 
+The Markovian dynamics which impact \Cref{eq:todescato-discretized-state,eq:todescato-discretized-measure} are parametrized by the following matrices. Formally, the four matrices given below are indexed by the observation time $t_{j}$, but the only manner in which they differ across observation times is through changes to the location set $\calM_{j} \subset \calI$. If the locations are always identical (i.e. $\calM_{1} = \dots = \calM_{J} = \calI$), then these matrices are fully constant. 
 \begin{subequations}
     \label{eq:todescato-discretize-parameters}
     \begin{align}
-        A(j) &= e^{T_{j}(\bfI \otimes F)} \in \bbR^{rM \times rM} \label{eq:todescato-discretize-Aj}\\
-        C(j) &= I_{j}\overline{K}_{s}^{1/2}(\bfI \otimes H) \in \bbR^{M_{j} \times rM} \label{eq:todescato-discretize-Cj}\\
-        Q(j) &= \bfI \otimes \left(\int_{t_{j-1}}^{t_{j}}\big(e^{\tau{F}}\big)GG^{\sfTsmall}\big(e^{\tau{F}}\big)\dx[\tau]\right) \in \bbR^{rM \times rM} \label{eq:todescato-discretize-Qj}\\
-        R(j) &= \sigma^{2}\bfI \in \bbR^{M_{j} \times M_{j}} \label{eq:todescato-discretize-Rj}
+        A(j) &= e^{\tau_{j}(\bfI_{M} \otimes F)} \in \bbR^{rM \times rM} \label{eq:todescato-discretize-Aj}\\
+        C(j) &= I_{j}\overline{K}_{s}^{1/2}(\bfI_{M} \otimes H) \in \bbR^{M_{j} \times rM} \label{eq:todescato-discretize-Cj}\\
+        Q(j) &= \bfI_{M} \otimes \left(\int_{0}^{\tau_{j}}\big(e^{\tau{F}}\big)GG^{\sfTsmall}\big(e^{\tau{F}}\big)\dx[\tau]\right) \in \bbR^{rM \times rM} \label{eq:todescato-discretize-Qj}\\
+        R(j) &= \sigma^{2}\bfI_{M_{j}} \in \bbR^{M_{j} \times M_{j}} \label{eq:todescato-discretize-Rj}
     \end{align}
 \end{subequations}
-% \clearpage
-% \begin{algorithm}
-%     \caption{Kalman-based GP regression on $\calI$}
-%     \label{alg:todescato-kalman-regression}
+The matrix $I_{j}$ in \Cref{eq:todescato-discretize-Cj} is an indicator matrix $I_{j} \in \{0, 1\}^{M_{j} \times M}$ which selects for the subset of $x_{i} \in \calM_{j}$ from the entire location set $\calI$.
 
-%     \begin{algorithmic}[1]
-%         \Require 
-%             \Statex \hspace{\algorithmicindent} $(F,G,H)$: state-space representation of $S_r(\omega)$
-%             \Statex \hspace{\algorithmicindent} $\sigma^2$: measurement noise variance
-%             \Statex \hspace{\algorithmicindent} $\calI$: set of input locations
-%             \Statex \hspace{\algorithmicindent} $K_s(\cdot,\cdot)$: spatial kernel function
-%             \Statex \hspace{\algorithmicindent} $\gamma(\cdot)$: temporal kernel function
-%             \Statex \hspace{\algorithmicindent} $\Sigma_0$: solution of Lyapunov equation $FX+XF^{\sfTsmall}+GG^{\sfTsmall}=0$
-
-%         \State Initialize $\widehat{\bfs}(0\mid -1) = \mathbf{0}$ and $\bfSigma(0\mid -1)=\bfI\otimes\bfSigma_0$.
-
-%         % \State Store the additional variable
-%         % $\widehat{\mathbf{s}}(t),\widehat{\mathbf{s}}(0)=\mathbf{0}$.
-
-%         \Statex \texttt{State Regression:}
-%         \For{$t\in\mathbb{R}^{+}$}
-
-%             \If{$t \in (t_{j}, t_{j+1})$}
-%                 \Statex \texttt{Open-loop prediction:}
-%                 \State $\tau = t - t_j$
-%                 \State $\widehat{\bfs}(t) = e^{(\bfI \otimes F)\tau}\widehat{\bfs}(j \mid j)$
-%                 \State $\bfSigma^{\bfs}(t) = \big(e^{(\bfI \otimes F)\tau}\big)\bfSigma(j|j)\big(e^{(\bfI \otimes F)\tau}\big)^{\sfTsmall}$
-
-%             \ElsIf{$t=t_{j+1}$}
-%                 \Statex \texttt{Kalman estimate:}
-%                 \State Compute $A(j), C(j), Q(j), R(j)$ per \Cref{eq:todescato-discretization}
-%                 \State Apply the Kalman filter (\Cref{alg:kalman-filter}) to compute $\widehat{\bfs}(j+1 \mid j+1)$ and $\bfSigma(j+1 \mid j+1)$
-%                 \State $\widehat{\mathbf{s}}(t) = \widehat{\mathbf{s}}(j+1\mid j+1)$
-%                 \State $\bfSigma^{\bfs}(t)=\bfSigma(j+1\mid j+1)$
-%             \EndIf
-
-%             \Statex \texttt{Process Estimate:}
-%             \State $\widehat{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\widehat{\bfs}(t)$
-%             \State $\bfSigma^{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\bfSigma^{\bfs}(t)(\bfI \otimes H)^{\sfTsmall}\overline{K}_{s}^{1/2}$
-%         \EndFor
-%     \end{algorithmic}
-% \end{algorithm}
-% \clearpage
 \begin{algorithm}
     \caption{Kalman-based GP regression on $\calI$ at query time $t \in \bbR^{+}$}
     \label{alg:todescato-kalman-GP}
 
+    \begin{spacing}{1.1}
     \begin{algorithmic}[1]
         \Require 
             \Statex \hspace{\algorithmicindent} $(F,G,H)$: state-space representation of $S_r(\omega)$
@@ -475,17 +467,43 @@ The Markovian dynamics which impact \Cref{eq:todescato-discretized-state,eq:tode
         \State $\bfSigma^{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\bfSigma^{\bfs}(t)(\bfI \otimes H)^{\sfTsmall}\overline{K}_{s}^{1/2}$
         \State \Return $\widehat{\bff}(t)$ and $\bfSigma^{\bff}(t)$
     \end{algorithmic}
+    \end{spacing}
 \end{algorithm}
 
 \Cref{alg:todescato-kalman-GP} is a cleaned-up representation of the first algorithm presented by \citeauthor{Todescato-Efficient-2020} in their paper. Instead of presenting the algorithm as a continuous, non-terminating function which `loops' over all $t \in \bbR^{+}$, we have altered the formulation of the algorithm to explicitly demonstrate the Kalman filtering aspect, and the subsequent estimation of the change in the process post-filtering. 
 
-% It should be noted that in practice, the most recent Kalman-filtered state should be maintained in memory so that previous states do not need to be recomputed if subsequent information arrives.
+Though it is not an inherent part of the algorithm, in practice, \Cref{alg:todescato-kalman-GP} should be treated as an \emph{online} algorithm, with the most recent Kalman-filtered state maintained in memory until a new set of observations are recorded and transmitted. Storing these terms in local memory will both allow for the estimation of current-time measurements based on a continuous-time stochastic dynamical equation, and it prevents the need to recompute previous states when subsequent measurements are transmitted and the updates to the current estimated states are desired.
 
-As part of their paper, \citeauthor{Todescato-Efficient-2020} describe and prove a \emph{Dynamic Representer Theorem}; a form of the classic `Representer Theorem' for Gaussian processes (see \Cref{thm:representer-theorem}) which is amenable to the presumed spatiotemporal dynamics in their model. The key  practical result of their Dynamic Representer Theorem is that for any time $t$ beyond the final observation time $t_{J}$, the mean and variance estimates returned by \Cref{alg:todescato-kalman-GP} can be used to derive a minimum-variance estimator of the function $f(x, t)$ at \emph{any} location $x \in \calX$.
+As part of their paper, \citeauthor{Todescato-Efficient-2020} describe and prove a \emph{Dynamic Representer Theorem} \Cref{thm:dynamic-representer-theorem}; a form of the classic `Representer Theorem' for Gaussian processes (see \Cref{thm:representer-theorem}) which is amenable to the presumed spatiotemporal dynamics in their model. The key  practical result of their Dynamic Representer Theorem is that for any time $t$ beyond the final observation time $t_{J}$, the mean and variance estimates returned by \Cref{alg:todescato-kalman-GP} can be used to derive a minimum-variance estimator of the function $f(x, t)$ at \emph{any} location $x \in \calX$.
 
-Furthermore, the authors demonstrate that the computational complexity of \Cref{alg:todescato-kalman-GP} is of the order $\calO(rMM_{J} + rM_{J}^{3})$ to derive the mean and covariance $\widehat{\bff}(t_{J})$ and $\bfSigma^{\bff}(t_{J})$, with an additional $\calO(MP)$ cost to compute predictions of the form $f(x_{i}, t)$ at the $P$ locations $\{x_{1}, \dots, x_{P}\} \in \calX$.     
+\begin{theorem}[Dynamic Representer Theorem]
+\label{thm:dynamic-representer-theorem}
+    Suppose that we have a Gaussian process $f: \calX \times \bbR^{+} \to \bbR$ with a spatiotemporal kernel $k(\cdot, \cdot)$ which satisfies \Cref{ass:todescato-kernel-sep,ass:todescato-psd-order}, and we have some observations recorded at times $t_{0}, \dots, t_{J}$. For any $x \in \calX$ and $t \ge t_{J}$, our estimate of $f(x, t)$ is the following:
+    \begin{equation}
+    \label{eq:dynamic-rep-mean}
+        \widehat{f}(x, t) = \overline{K}_{s}(x, \calI)\overline{K}_{s}(\calI, \calI)\widehat{\bff}(t),
+    \end{equation}
+    and the variance of this estimator is given by 
+    \begin{equation}
+    \label{eq:dynamic-rep-var}
+        \var{\widehat{f}(x, t) \mid \calD} = \gamma(0)\Big[\overline{K}_{s}(x, x) - \overline{K}_{s}(x, \calI)\overline{K}_{s}(\calI, \calI)^{-1}\big(\overline{K}_{s}(\calI, \calI) - \bfSigma^{\bff}(t)\big)\overline{K}_{s}(\calI, \calI)^{-1}\overline{K}_{s}(\calI, x)\Big]
+    \end{equation}
+\end{theorem}
+
+The key concept behind the authors' proof of \Cref{thm:dynamic-representer-theorem} is that the assumptions regarding the evolution of the spatiotemporal dynamical system yield a strong conditional independence result. In particular, the value of $f(x, t)$ is \emph{conditionally independent} of the state of the dynamical system at any other time given the observations at time $t$. More formally, for any location $x \in \calX$ and measurement time $t \in \bbR$, we have that
+\begin{equation}
+\label{eq:todescato-cond-indep}
+    f(x, t) \indep \bff(\tau) \mid \bff(t), \quad \tau \ne t
+\end{equation}
+The implication of \Cref{eq:todescato-cond-indep} is clear for any $x \in \calI_{j}$ when $t = t_{j}$, as we would therefore already have an observation corresponding to that location at that time. However, the key takeaway of this result is that the mean $\widehat{\bff}(t)$ and covariance $\bfSigma^{\bff}(t)$ given by the filtering distribution in \Cref{alg:todescato-kalman-GP} can be used as a posterior Gaussian process in estimating the value of $f(x, t)$ at \emph{any} location. As a corollary of this conditional independence result, the Representer Theorem \Cref{thm:representer-theorem} for Gaussian processes implies that $\widehat{f}(x, t)$ is a minimum-variance estimator for the value of $f(x, t)$.
+
+In addition to defining and proving the Dynamic Representer Theorem, the authors describe the computational complexity of updating the estimated mean and variance in accordance with \Cref{alg:todescato-kalman-GP}. One iteration of the Kalman filtering algorithm to update the estimated mean and covariance from $\widehat{\bff}(t_{j-1})$ and $\bfSigma^{\bff}(t_{j-1})$ to $\widehat{\bff}(t_{j})$ and $\bfSigma^{\bff}(t_{j})$ has a computational complexity on the order of $\calO(rMM_{j} + rM_{j}^{3})$, with an additional cost of $\calO(MP)$ to compute predictions of the form $\{f(x_{p}, t_{j})\}_{i=1}^{P}$. Again, we reiterate here that this computation is made more efficient by treating \Cref{alg:todescato-kalman-GP} as an online algorithm, with some aspects of the model saved in persistent storage. For instance, extending the estimates to $P$ arbitrary locations requires computing $\overline{K}_{s}(\calI, \calI)^{-1}\overline{K}_{s}(\calI, x_{p})$ at each prediction location $x_{p}$. This matrix inversion and multiplication would typically be of the order $\calO(M^{2}P)$, but the matrix $\overline{K}_{s}(\calI, \calI)^{-1} \in \bbR^{M \times M}$ is constant across all iterations, so pre-computing and storing this matrix will allow for a significant practical speedup.
 
 % \clearpage
+
+\subsection{Adaptive Location Space}
+
+In addition to the presentation of their primary Kalman-enhanced Gaussian process regression algorithm, \citeauthor{Todescato-Efficient-2020} also describe a second algorithm for 
 
 \subsection{Multi-Output Dynamical System}
 Now, we may focus on the adaptation of the Kalman-enhanced regression algorithm for a multi-output Gaussian process. In addition to the two previously-stated assumptions on the nature of the dynamical system, we must make one additional assumption regarding the observations in the dynamical model.
@@ -544,13 +562,26 @@ To accomplish this, we generate synthetic data according to a multivariate Gauss
 \begin{subequations}
     \label{eq:simulation-kernels}
     \begin{align}
-        \textbf{Independent:} \quad & K((x, t, d), (x', t', d')) = \gamma(\abs{t - t'}) K_{s}(x, x') \mathbf{1}_{\{d = d'\}}\sigma^{2}_{d}\\[6pt]
-        \textbf{ICM:} \quad & K((x, t, d), (x', t', d')) = \gamma(\abs{t - t'}) K_{s}(x, x') \bfB(d, d')\\[6pt]
-        \textbf{LMC:} \quad & K((x, t, d), (x', t', d')) = \gamma(\abs{t - t'}) \sum_{q=1}^{Q} K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d')\\[6pt]
-        \textbf{Temporal LMC:} \quad & K((x, t, d), (x', t', d')) = \sum_{q=1}^{Q} \gamma^{(q)}(\abs{t - t'}) K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d')
+        \textbf{Independent:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) K_{s}(x, x') \mathbf{1}_{\{d = d'\}}\sigma^{2}_{d}\\[6pt]
+        \textbf{ICM:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) K_{s}(x, x') \bfB(d, d')\\[6pt]
+        \textbf{LMC:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) \sum_{q=1}^{Q} K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d')\\[6pt]
+        \textbf{Temporal LMC:} \quad K((x, t, d), (x', t', d')) &= \sum_{q=1}^{Q} \gamma^{(q)}(\abs{t - t'}) K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d')
     \end{align}
 \end{subequations}
-These four kernels describe similar, but distinct, covariance structures for a multi-output Gaussian process. The first two kernels are fully separable into the product of covariances across the temporal, spatial, and output dimensions, whereas the two LMC kernels are a finite sum of such separable kernels. 
+These four kernels describe similar, but distinct, covariance structures for a multi-output Gaussian process. The first two kernels are fully separable into the product of covariances across the temporal, spatial, and output dimensions, whereas the two LMC kernels are constructed via a sum of separable kernels, but they are not themselves separable. 
+\begin{subequations}
+    \label{eq:simulation-kernel-eqns}
+    \begin{align}
+        \textbf{Independent:} \quad K((x, t, d), (x', t', d')) &= \exp\!\Big(\!-\frac{\norm{x - x'}^{2}}{2}\Big)\exp(-\abs{t - t'})\mathbf{1}_{\{d = d'\}}\sigma^{2}_{d}\\[6pt]
+        % \textbf{ICM:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) K_{s}(x, x') \bfB(d, d')\\[6pt]
+        % \textbf{LMC:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) \sum_{q=1}^{Q} K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d')\\[6pt]
+        % \textbf{Temporal LMC:} \quad K((x, t, d), (x', t', d')) &= \sum_{q=1}^{Q} \gamma^{(q)}(\abs{t - t'}) K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d')
+    \end{align}
+\end{subequations}
+
+
+
+The simulation study was carried out on a computing server hosted by the Department of Statistical Sciences at the University of Toronto. To effectively run the simulations, we used \texttt{Python 3.12.5} \citep{python-3-12-5} with the \texttt{gpytorch} \citep{GPyTorch-Library-2018} library providing significant assistance.
 
 % \subsection{Code Implementation}
 
@@ -576,7 +607,7 @@ In this paper, we focus on developing a method for deriving estimates of a spati
 
 One potential area of continued algorithmic research related to this project is to examine the use of smoothing distributions such as the Rauch-Tung-Striebel (RTSS) smoother \citep{Rauch-RTSS-1965,Bayesian-Filter-Book-2023} or modified Bryson-Frazier smoother \citep{Colemont-MBF-Smoothing-2026}. The primary use of these smoothing distributions is to develop estimates for the latent states $f(x_{i}, t_{j})$ at \emph{any} observation time $t_{k}$ instead of solely performing inference on the latent states corresponding to the latest-observed measurements. The RTSS has been shown \citet{Hartikainen-Smoothing-GP-2010,Sarkka-Spatial-Kalman-2012} to be closely related to temporal Gaussian processes, which can enable the use of smoothers for the multi-output Gaussian process problems considered in this work.
 
-Another related task of future interest is to examine the possibility of working with dynamical systems whose transformations are governed by unknown parameters. In this work, we have focused on dynamical systems where the mechanics underpinning the evolution of the system over time are fully known. However, this is a reductive assumption, which may be improved upon through...
+Another related task of future interest is to examine the possibility of working with dynamical systems whose transformations are governed by unknown parameters. In this work, we have focused on dynamical systems where the mechanics underpinning the evolution of the system over time are fully known. However, this is a reductive assumption, which may be improved upon through incorporating unknown system parameters into the state transition model, instead of treating the evolution equations as fully specified and completely understood. For example, a parametric or semi-parametric kernel function may have hyperparameters which can be inferred jointly with the latent states in the dynamical system. Developments in this research area may be particularly relevant in real-world scientific research applications in fields such as epidemiology, environmental science, and control systems engineering, as real-world dynamical systems are often governed by time-varying behaviour, and we may lack complete knowledge of the corresponding mechanics driving the evolution of the system.
 
 % \bigskip
 % \bigskip
@@ -585,7 +616,6 @@ Another related task of future interest is to examine the possibility of working
 % References
 \newpage
 
-% \nocite{GPML-Book-2006, Bayesian-Filter-Book-2023}
 \bibliographystyle{apalike}
 \bibliography{references}
 
@@ -596,11 +626,15 @@ Another related task of future interest is to examine the possibility of working
 \section*{Appendix}
 
 \section{AI Usage Statement}
-Two large language models -- Claude Opus 5.5 (Anthropic) and GPT-5.6 Luna (OpenAI) -- were used in the creation of this project. 
+Two large language models -- Claude Opus 5.5 (Anthropic) and GPT-5.6 Luna (OpenAI) -- were used in the creation of this report.
 
-Claude Opus 5.5 was employed for the creation and testing of Python code used for the simulations and replication of results. Claude Opus 5.5 was additionally used for assistance with the mathematical derivations and guarantees. GPT-5.6 Luna assisted with \LaTeX typesetting and formatting. Both models were also used in searching for relevant background literature.
+Claude Opus 5.5 was employed for the creation and testing of Python code used for the simulations and replication of results from the prior paper. Claude Opus 5.5 was additionally used for assistance with some mathematical derivations and proofs within the written report. GPT-5.6 Luna was used for \LaTeX typesetting and formatting. Both large language models were used in searching for relevant background literature pertaining to this project.
 
-All written text in this document has been both verified and re-written by the author. None of the text in the written document is the output of a large language model.
+All of the content in this document has been verified by the author, and is the sole responsibility of the author of this document. All AI-generated work in the creation of this project has been thoroughly reviewed and revised upon by the author, who is solely responsible for the content therein.
+
+\section{Code} 
+\label{sec:code} 
+For the sake of brevity, the code utilized in the creation of this project is not directly present in the appendix. All of the code used for this project is available in a public GitHub repository, located at \url{https://github.com/hotz1/Dynamical-Multitask-Prediction}. The \texttt{README.md} file in the root directory of the GitHub repository contains further information regarding these files.
 
 \section{Definitions and Technical Details}
 \label{sec:definitions}
@@ -641,9 +675,20 @@ All written text in this document has been both verified and re-written by the a
     \end{equation}
 \end{definition}
 
-\section{Code} 
-\label{sec:code} 
-% For the sake of brevity, the code used in this project is not directly added to the appendix. 
+\begin{theorem}[Wiener-Khinchin Theorem]
+\label{thm:wiener-khinchin}
+    Suppose that $S(\omega)$ is the power spectral density of a univariate real-valued function $z(\tau)$, where $z(\tau)$ is the covariance of a stationary Gaussian process with $\tau := t - t'$. The PSD $S(\omega)$ is equal to the Fourier transform of the covariance $z$, given by 
+    \begin{equation}
+        S(\omega) := \calF[z(\tau)](\omega)
+    \end{equation}
+\end{theorem}
 
-All of the code used for this project is available in a public GitHub repository, located at \url{https://github.com/hotz1/Dynamical-Multitask-Prediction}.
+\begin{theorem}[Spectral Factorization]
+\label{thm:spectral-factor}
+    Suppose that $S(\omega)$ is the power spectral density of a univariate real-valued function $z(\tau)$, and $S(\omega)$ is a rational function of order $2r$. The power spectral density $S(\omega)$ can be decomposed into $S(\omega) = W(\bmi\omega)W(-\bmi\omega)$, where $W(\cdot)$ is described by the following:
+    \begin{equation}
+    \label{eq:spectral-factor}
+        W(\bmi\omega) := \frac{b_{r-1}(\bmi\omega)^{r-1} + b_{r-2}(\bmi\omega)^{r-2} + \cdots + b_{0}}{(\bmi\omega)^{r} + a_{r-1}(\bmi\omega)^{r-1} + \cdots + a_{0}}
+    \end{equation}
+\end{theorem}
 \end{document}

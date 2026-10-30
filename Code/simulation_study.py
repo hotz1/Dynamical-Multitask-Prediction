@@ -37,7 +37,7 @@ LOAD_PARAMETERS_KWARGS = {}  # load_parameters arguments fixed across the study,
 PLOT_AXES = ("model", "num_outputs")   # x-axis and panel columns of the summary figures
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
-METHOD_STYLE = {"batch": ("batch GP (smoothing)", "#2a78d6", "o"), "gpkf": ("GPKF (filtering)", "#eb6834", "s")}
+METHOD_STYLE = {"batch": ("MOGP", "#2a78d6", "o"), "gpkf": ("GPKF", "#eb6834", "s")}
 
 
 def run_study(reps, seed, out_path, num_locs=100, end_time=10.0, time_step=0.5, batch=True, redraw_kernel=False):

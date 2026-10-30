@@ -13,7 +13,7 @@ from functions.metrics import marginal_variances
 TRUE_COLOR = "#222222"   # neutral ink for the ground truth
 NP_COLOR = "#2a78d6"     # blue: batch GP (smoother)
 KF_COLOR = "#eb6834"     # orange: GPKF (filter)
-METHODS = (("Np", "batch GP (smoothing)", NP_COLOR, ":"), ("Kf", "GPKF (filtering)", KF_COLOR, "--"))
+METHODS = (("Np", "MOGP", NP_COLOR, ":"), ("Kf", "GPKF", KF_COLOR, "--"))
 
 
 def _style(ax):

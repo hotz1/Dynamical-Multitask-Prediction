@@ -14,6 +14,7 @@
 
 \input{../tex-macros/math-macros.tex}
 \input{../tex-macros/math-alphabets-ams.tex}
+% \graphicspath{../Code/results/full/}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{definition}{Definition}[section]
@@ -503,9 +504,12 @@ In addition to defining and proving the Dynamic Representer Theorem, the authors
 
 \subsection{Adaptive Location Space}
 
-In addition to the presentation of their primary Kalman-enhanced Gaussian process regression algorithm, \citeauthor{Todescato-Efficient-2020} also describe a second algorithm for 
+In addition to the presentation of their primary Kalman-enhanced Gaussian process regression algorithm, \citeauthor{Todescato-Efficient-2020} also describe a second algorithm which allows for the input location space $\calI$ to be adaptively changed over the course of the study, so that we have input location sets $\calI(1), \dots, \calI(J)$, instead of a pre-fixed set $\calI$ representing all possible measurement locations.
 
-\subsection{Multi-Output Dynamical System}
+This version of the algorithm lends itself toward many practical applications, as this allows for the measurement equipment to be moved from one location to another without invalidating some of the authors' earlier assumptions. The canonical example given by \citeauthor{Todescato-Efficient-2020} is a group of aerial vehicles which measure meteorological data near clouds, but there are many other situations where adaptive input locations may be desired, e.g. data collected by researchers at a given site.
+
+% \subsection{Multi-Output Dynamical System}
+\subsection{\colorbox{yellow}{Multi-Output Dynamical System}}
 Now, we may focus on the adaptation of the Kalman-enhanced regression algorithm for a multi-output Gaussian process. In addition to the two previously-stated assumptions on the nature of the dynamical system, we must make one additional assumption regarding the observations in the dynamical model.
 \begin{assumption}[Missingness of Vector-Valued Observations]
 \label{ass:all-or-nothing}
@@ -514,41 +518,44 @@ Now, we may focus on the adaptation of the Kalman-enhanced regression algorithm 
 \Cref{ass:all-or-nothing} is a simplifying assumption which ensures that there are not any partially-recorded or partially-unrecorded vectors of information. Such an assumption was absent from the prior paper on this topic, as their algorithm focused solely on scalar-valued responses, so it would not be possible for the measurement $\bfy_{i}(t_{j})$ to be partially observed.
 
 \begin{algorithm}
-    \caption{Kalman-based MOGP regression on $\calI$ at query time $t \in \bbR^{+}$}
+    \caption{\colorbox{yellow}{Kalman-based MOGP regression on $\calI$ at query time $t \in \bbR^{+}$}}
     \label{alg:kalman-MOGP-regression}
 
+    \begin{spacing}{1.1}
     \begin{algorithmic}[1]
-        % \Require 
-        %     \Statex \hspace{\algorithmicindent} $(F,G,H)$: state-space representation of $S_r(\omega)$
-        %     \Statex \hspace{\algorithmicindent} $\sigma^2$: measurement noise variance
-        %     \Statex \hspace{\algorithmicindent} $\calI$: set of input locations
-        %     \Statex \hspace{\algorithmicindent} $K_s(\cdot,\cdot)$: spatial kernel function
-        %     \Statex \hspace{\algorithmicindent} $\gamma(\cdot)$: temporal kernel function
-        %     \Statex \hspace{\algorithmicindent} $\bfSigma_0$: solution of Lyapunov equation $FX+XF^{\sfTsmall}+GG^{\sfTsmall}=0$
+        \Require 
+            \Statex \hspace{\algorithmicindent} $(F,G,H)$: state-space representation of $S_r(\omega)$
+            \Statex \hspace{\algorithmicindent} $\sigma^2$: measurement noise variance
+            \Statex \hspace{\algorithmicindent} $\calI$: set of input locations
+            \Statex \hspace{\algorithmicindent} $K_s(\cdot,\cdot)$: spatial kernel function
+            \Statex \hspace{\algorithmicindent} $\gamma(\cdot)$: temporal kernel function
+            \Statex \hspace{\algorithmicindent} $\bfSigma_0$: solution of Lyapunov equation $FX+XF^{\sfTsmall}+GG^{\sfTsmall}=0$
 
-        % \State Initialize $\widehat{\bfs}(0\mid -1) = \mathbf{0}$ and $\bfSigma(0\mid -1)=\bfI\otimes\bfSigma_0$.
+        \State Initialize $\widehat{\bfs}(0\mid -1) = \mathbf{0}$ and $\bfSigma(0\mid -1)=\bfI\otimes\bfSigma_0$.
 
-        % \Statex \texttt{Kalman estimates:}
-        % \While{$t_{j+1} \le t$}
-        %     \State Compute $A(j), C(j), Q(j), R(j)$ using \Crefrange{eq:todescato-discretize-Aj}{eq:todescato-discretize-Rj}
-        %     \State Apply the Kalman filter (\Cref{alg:kalman-filter}) to compute $\widehat{\bfs}(j+1 \mid j+1)$ and $\bfSigma(j+1 \mid j+1)$
-        %     \State $\widehat{\mathbf{s}}(t) = \widehat{\mathbf{s}}(j+1\mid j+1)$
-        %     \State $\bfSigma^{\bfs}(t)=\bfSigma(j+1\mid j+1)$
-        % \EndWhile 
+        \Statex \texttt{Kalman estimates:}
+        \While{$t_{j+1} \le t$}
+            \State Compute $A(j), C(j), Q(j), R(j)$ using \Crefrange{eq:todescato-discretize-Aj}{eq:todescato-discretize-Rj}
+            \State Apply the Kalman filter (\Cref{alg:kalman-filter}) to compute $\widehat{\bfs}(j+1 \mid j+1)$ and $\bfSigma(j+1 \mid j+1)$
+            \State $\widehat{\mathbf{s}}(t) = \widehat{\mathbf{s}}(j+1\mid j+1)$
+            \State $\bfSigma^{\bfs}(t)=\bfSigma(j+1\mid j+1)$
+        \EndWhile 
 
-        % \Statex \texttt{Open-loop prediction:}
-        % \State $\tau = t - t_j$
-        % \State $\widehat{\bfs}(t) = e^{\tau(\bfI \otimes F)}\widehat{\bfs}(j \mid j)$
-        % \State $\bfSigma^{\bfs}(t) = \big(e^{\tau(\bfI \otimes F)}\big)\bfSigma(j|j)\big(e^{\tau(\bfI \otimes F)}\big)^{\sfTsmall}$
+        \Statex \texttt{Open-loop prediction:}
+        \State $\tau = t - t_j$
+        \State $\widehat{\bfs}(t) = e^{\tau(\bfI \otimes F)}\widehat{\bfs}(j \mid j)$
+        \State $\bfSigma^{\bfs}(t) = \big(e^{\tau(\bfI \otimes F)}\big)\bfSigma(j|j)\big(e^{\tau(\bfI \otimes F)}\big)^{\sfTsmall}$
 
-        % \Statex \texttt{Process Estimate:}
-        % \State $\widehat{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\widehat{\bfs}(t)$
-        % \State $\bfSigma^{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\bfSigma^{\bfs}(t)(\bfI \otimes H)^{\sfTsmall}\overline{K}_{s}^{1/2}$
+        \Statex \texttt{Process Estimate:}
+        \State $\widehat{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\widehat{\bfs}(t)$
+        \State $\bfSigma^{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\bfSigma^{\bfs}(t)(\bfI \otimes H)^{\sfTsmall}\overline{K}_{s}^{1/2}$
         \State \Return $\widehat{\bff}(t)$ and $\bfSigma^{\bff}(t)$
     \end{algorithmic}
+    \end{spacing}
 \end{algorithm}
 
-\section{Methods}
+% \section{Methods}
+\section{\colorbox{yellow}{Methods}}
 \label{sec:methods}
 
 A major theoretical benefit of the algorithm proposed by \citeauthor{Todescato-Efficient-2020} -- and our multi-output extension in \Cref{alg:kalman-MOGP-regression} -- is that under the necessary assumptions presented above, these algorithms provide minimum variance estimators with a significant reduction in the required computational resources. In order to determine if this goal is met in a practical setting, it is necessary to assess the efficacy of the proposed algorithm based on testable, reproducible results.
@@ -562,9 +569,9 @@ To accomplish this, we generate synthetic data according to a multivariate Gauss
 \begin{subequations}
     \label{eq:simulation-kernels}
     \begin{align}
-        \textbf{Independent:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) K_{s}(x, x') \mathbf{1}_{\{d = d'\}}\sigma^{2}_{d}\\[6pt]
-        \textbf{ICM:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) K_{s}(x, x') \bfB(d, d')\\[6pt]
-        \textbf{LMC:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) \sum_{q=1}^{Q} K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d')\\[6pt]
+        \textbf{Independent:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) K_{s}(x, x') \sigma^{2}_{d}\mathbf{1}_{\{d = d'\}}\\[6pt]
+        \textbf{ICM:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) K_{s}(x, x') \bfB(d, d')\\[3pt]
+        \textbf{LMC:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) \sum_{q=1}^{Q} K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d')\\[3pt]
         \textbf{Temporal LMC:} \quad K((x, t, d), (x', t', d')) &= \sum_{q=1}^{Q} \gamma^{(q)}(\abs{t - t'}) K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d')
     \end{align}
 \end{subequations}
@@ -572,14 +579,15 @@ These four kernels describe similar, but distinct, covariance structures for a m
 \begin{subequations}
     \label{eq:simulation-kernel-eqns}
     \begin{align}
-        \textbf{Independent:} \quad K((x, t, d), (x', t', d')) &= \exp\!\Big(\!-\frac{\norm{x - x'}^{2}}{2}\Big)\exp(-\abs{t - t'})\mathbf{1}_{\{d = d'\}}\sigma^{2}_{d}\\[6pt]
-        % \textbf{ICM:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) K_{s}(x, x') \bfB(d, d')\\[6pt]
-        % \textbf{LMC:} \quad K((x, t, d), (x', t', d')) &= \gamma(\abs{t - t'}) \sum_{q=1}^{Q} K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d')\\[6pt]
-        % \textbf{Temporal LMC:} \quad K((x, t, d), (x', t', d')) &= \sum_{q=1}^{Q} \gamma^{(q)}(\abs{t - t'}) K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d')
+        \textbf{Independent:} \quad K((x, t, d), (x', t', d')) &= \exp(-\abs{t - t'})K_{\textrm{RBF}}(x, x')\sigma^{2}_{d}\mathbf{1}_{\{d = d'\}} \label{eq:simulation-indep-kernel}\\[6pt]
+        \textbf{ICM:} \quad K((x, t, d), (x', t', d')) &= \exp(-\abs{t - t'})K_{\textrm{RBF}}(x, x')\bfB(d, d')\label{eq:simulation-icm-kernel}\\[6pt]
+        \textbf{LMC:} \quad K((x, t, d), (x', t', d')) &= \exp(-\abs{t - t'})\sum_{q=1}^{Q}C_{7/2 - q}(x, x')\bfB^{(q)}(d, d')\label{eq:simulation-lmc-kernel}\\[6pt]
+        \textbf{Temporal LMC:} \quad K((x, t, d), (x', t', d')) &= \sum_{q=1}^{Q}\exp\!\Big(-\frac{\abs{t - t'}}{q}\Big)C_{7/2 - q}(x, x')\bfB^{(q)}(d, d') \label{eq:simulation-lmc-temporal-kernel}
     \end{align}
 \end{subequations}
+The MOGP kernels shown in \Cref{eq:simulation-indep-kernel,eq:simulation-icm-kernel} are created by taking the product of a Gaussian RBF kernel over the spatial variables with a Mat{\'e}rn(1/2) kernel for the temporal variables, and multiplying by the corresponding matrix entry for the dimensions $(d, d')$. 
 
-
+The kernels in \Cref{eq:simulation-lmc-kernel,eq:simulation-lmc-temporal-kernel} are created by taking the sum of three Mat{\'e}rn kernels with different parameters ($\nu = \{1/2, 3/2, 5/2\}$) for the spatial covariance, and multiplying these by an associated kernel for the temporal covariance.
 
 The simulation study was carried out on a computing server hosted by the Department of Statistical Sciences at the University of Toronto. To effectively run the simulations, we used \texttt{Python 3.12.5} \citep{python-3-12-5} with the \texttt{gpytorch} \citep{GPyTorch-Library-2018} library providing significant assistance.
 
@@ -589,7 +597,8 @@ The simulation study was carried out on a computing server hosted by the Departm
 
 % \subsection{Extension}
 
-\section{Results}
+% \section{Results}
+\section{\colorbox{yellow}{Results}}
 \label{sec:results}
 
 \section{Discussion}
@@ -601,13 +610,16 @@ In this paper, we focus on developing a method for deriving estimates of a spati
 
 % This work primarily follows the algorithm proposed by \citeauthor{Todescato-Efficient-2020} to couple Gaussian process regression with Kalman filtering methods for scalar outcome variables.
 
-\subsection{Limitations}
+% \subsection{Limitations}
+\subsection{\colorbox{yellow}{Limitations}}
 
 \subsection{Future Work}
 
 One potential area of continued algorithmic research related to this project is to examine the use of smoothing distributions such as the Rauch-Tung-Striebel (RTSS) smoother \citep{Rauch-RTSS-1965,Bayesian-Filter-Book-2023} or modified Bryson-Frazier smoother \citep{Colemont-MBF-Smoothing-2026}. The primary use of these smoothing distributions is to develop estimates for the latent states $f(x_{i}, t_{j})$ at \emph{any} observation time $t_{k}$ instead of solely performing inference on the latent states corresponding to the latest-observed measurements. The RTSS has been shown \citet{Hartikainen-Smoothing-GP-2010,Sarkka-Spatial-Kalman-2012} to be closely related to temporal Gaussian processes, which can enable the use of smoothers for the multi-output Gaussian process problems considered in this work.
 
-Another related task of future interest is to examine the possibility of working with dynamical systems whose transformations are governed by unknown parameters. In this work, we have focused on dynamical systems where the mechanics underpinning the evolution of the system over time are fully known. However, this is a reductive assumption, which may be improved upon through incorporating unknown system parameters into the state transition model, instead of treating the evolution equations as fully specified and completely understood. For example, a parametric or semi-parametric kernel function may have hyperparameters which can be inferred jointly with the latent states in the dynamical system. Developments in this research area may be particularly relevant in real-world scientific research applications in fields such as epidemiology, environmental science, and control systems engineering, as real-world dynamical systems are often governed by time-varying behaviour, and we may lack complete knowledge of the corresponding mechanics driving the evolution of the system.
+Another related task of future interest is to examine the possibility of working with dynamical systems whose transformations are governed by unknown parameters. In this work, we have focused on dynamical systems where the mechanics underpinning the evolution of the system over time are fully known. However, this is a reductive assumption, which may be improved upon through incorporating unknown system parameters into the state transition model, instead of treating the evolution equations as fully specified and completely understood. For example, a parametric or semi-parametric kernel function may have hyperparameters which can be inferred jointly with the latent states in the dynamical system using variational inference or empirical Bayes methods. Similarly, in certain applied contexts, it may be helpful investigate extensions of this method which incorporate change-point detection methods so that these methods are capable of modelling a larger class of spatiotemporal dynamical systems. 
+
+Further developments regarding these aspects of the work may be particularly applicable to `real-world' scientific research in fields such as epidemiology, ecology, environmental science, and control systems engineering, as the dynamical systems encountered in these research areas are often governed by time-varying behaviour, and we may lack complete knowledge of the corresponding mechanics driving the evolution of the system.
 
 % \bigskip
 % \bigskip
@@ -691,4 +703,37 @@ For the sake of brevity, the code utilized in the creation of this project is no
         W(\bmi\omega) := \frac{b_{r-1}(\bmi\omega)^{r-1} + b_{r-2}(\bmi\omega)^{r-2} + \cdots + b_{0}}{(\bmi\omega)^{r} + a_{r-1}(\bmi\omega)^{r-1} + \cdots + a_{0}}
     \end{equation}
 \end{theorem}
+
+\begin{definition}[Stationary Kernel]
+\label{def:stationary-kernel}
+    A kernel function $k: \calX \times \calX \to \bbR$ is a stationary kernel if the function solely depends on the difference of its inputs. Formally, every stationary kernel is a function of the form
+    \begin{equation}
+        k(x, x') = \varphi(\norm{x - x'}),
+    \end{equation}
+    where $\varphi(\cdot)$ is some univariate real-valued function.
+\end{definition}
+
+\begin{definition}[Isotropic Kernel]
+\label{def:isotropic-kernel}
+    A kernel function $k: \calX \times \calX \to \bbR$ is an isotropic kernel if the function solely depends on some normed distance between the inputs. Formally, every isotropic kernel is a function of the form
+    \begin{equation}
+        k(x, x') = \varphi(\norm{x - x'}),
+    \end{equation}
+    where $\varphi(\cdot)$ is some univariate real-valued function.
+\end{definition}
+
+\begin{definition}[Common Isotropic Kernels]
+\label{def:isotropic-examples}
+    Some isotropic kernels \Cref{def:isotropic-kernel} which are commonly used in spatial covariance modelling are the following:
+    \begin{subequations}
+        \label{eq:isotropic-examples}
+        \begin{align}
+            \textnormal{\textbf{Mat{\'e}rn(1/2):}} &\quad C_{1/2}(x, x') = \sigma^{2}\exp\!\Big(-\frac{d}{\ell}\Big)\\
+            \textnormal{\textbf{Mat{\'e}rn(3/2):}} &\quad C_{3/2}(x, x') = \sigma^{2}\Big(1 + \frac{\sqrt{3}d}{\ell}\Big)\exp\!\Big(-\frac{\sqrt{3}d}{\ell})\\
+            \textnormal{\textbf{Mat{\'e}rn(5/2):}} &\quad C_{5/2}(x, x') = \sigma^{2}\Big(1 + \frac{\sqrt{5}d}{\ell} + \frac{{5}d^{2}}{3\ell^{2}}\Big)\exp\!\Big(-\frac{\sqrt{5}d}{\ell})\\
+            \textnormal{\textbf{Gaussian (RBF):}} &\quad K_{\textrm{RBF}}(x, x') = \sigma^{2}\exp\!\Big(-\frac{d^{2}}{2\ell^{2}}\Big)
+        \end{align}
+    \end{subequations}
+    In each of the isotropic kernel examples shown above, we define $d := \norm{x - x'}$. The hyperparameters $\sigma^{2}$ and $\ell$ respectively represent scales for the distance and the kernel output, allowing greater flexibility in models using these isotropic kernel functions.
+\end{definition}
 \end{document}

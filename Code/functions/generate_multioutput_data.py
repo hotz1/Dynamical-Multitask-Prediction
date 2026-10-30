@@ -235,9 +235,9 @@ def example_multioutput_kernel(model, num_outputs=3, num_components=3, rng=None)
 
     The spatial and time kernels use the synthetic settings of
     `load_parameters` (gaussian space, Matern-1/2 time). For the LMC models
-    the q-th term has spatial length-scale q + 1 (and, for "lmc_time", the
-    time kernel alternates between Matern-1/2 and periodic), so the terms act
-    on different scales.
+    the spatial terms switch between three Matern kernels with different parameters.
+    For the "lmc" model, the temporal kernel is always a constant Matern-1/2 kernel,
+    and in the "lmc_time" model, the temporal kernel is a Matern-1/2 changing based on q.
     """
     rng = np.random.default_rng() if rng is None else rng
     space = {"type": "gaussian", "scale": 1.0, "std": 1.0}

@@ -32,7 +32,7 @@ GRID = {
     "num_outputs": [1, 2, 3, 5],
     "missing_frac": [0, 0.2, 0.5]
 }
-NUM_COMPONENTS = 2          # Q for the LMC models
+NUM_COMPONENTS = 3          # Q for the LMC models
 LOAD_PARAMETERS_KWARGS = {}  # load_parameters arguments fixed across the study, e.g. {"noise_std": 0.3}
 PLOT_AXES = ("model", "num_outputs")   # x-axis and panel columns of the summary figures
 

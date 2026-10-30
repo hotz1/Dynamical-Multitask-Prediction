@@ -85,6 +85,9 @@
 \onehalfspacing
 
 \begin{document}
+\graphicspath{
+    {../Code/results/full}
+}
 
 \maketitle
 \thispagestyle{empty}
@@ -111,9 +114,11 @@ Gaussian processes (GPs) are an `industry standard' procedure for modelling the 
 
 Gaussian process regression, also commonly referred to in the literature as \emph{kriging} after the South African geostatistician Danie G. Krige \citep{Cressie-Origins-1990}, is a statistical modelling procedure wherein a finite collection of observations are used for learning the form of an unknown real-valued function. Gaussian processes are particularly useful when there are correlations among observations, as these models can leverage information from correlated data to reduce the variance of outputs in the estimated function. Furthermore, the equations for fitting a GP to a dataset have computable closed-form solutions. Due to these convenient properties, Gaussian processes are frequently used in a variety of practical statistical applications involving modelling spatiotemporal data, particularly when we aim to learn certain functional properties of the underlying data.
 
-Although Gaussian processes are mathematically tractable and convenient to use, there is one \emph{major} drawback to these models: exact inference with Gaussian processes has a cubically-scaling computational overhead. Fitting a Gaussian process onto a dataset which contains $M$ observations is a procedure requiring $\calO(M^{3})$ floating point operations \citep{GPML-Book-2006}, making these regression problems infeasible for many large-scale datasets \citep{Guhaniyogi-Meta-Kriging-2018,Pfoertner-Comp-Aware-2025,Salari-GP-Turbines-2025}. For instance, fitting a Gaussian process on a `moderately-sized' dataset of 1000 observations would involve $\calO(10^{9})$ floating point operations. In applied scenarios involving spatiotemporal modelling where there are repeated measurements, the complexity of Gaussian process regression will scale with the cube of the number of locations \emph{and} measurements per location, which may quickly extend beyond the scope of feasible calculation.
+Although Gaussian processes are mathematically tractable and convenient to use, there is one \emph{major} drawback to these models: exact inference with Gaussian processes has a cubically-scaling computational overhead, as the procedure is bottlenecked by the cost to compute the Cholesky factorization of the covariance matrix. Fitting a Gaussian process onto a dataset which contains $M$ observations is a procedure requiring $\calO(M^{3})$ floating point operations \citep{GPML-Book-2006}, making these regression problems infeasible for many large-scale datasets \citep{Guhaniyogi-Meta-Kriging-2018,Pfoertner-Comp-Aware-2025,Salari-GP-Turbines-2025}.
 
-Furthermore, statistical modelling with Gaussian processes requires choosing a spatiotemporal covariance model which yields a positive semi-definite matrix on \emph{any} set of inputs \citep{GPML-Book-2006}. The class of valid covariance functions for a Gaussian process are mathematically convenient to work with in such regression contexts, but Gaussian process regression does impose further restrictions on how we choose to represent the covariance among observations in a spatiotemporal data setting. 
+As a brief theoretical example of this poor scaling, fitting a Gaussian process on a `moderately-sized' dataset containing 1000 observations requires $\calO(10^{9})$ floating point operations. In applied scientific scenarios involving spatiotemporal modelling where there are repeated measurements, the complexity of Gaussian process regression cubically with both of the number of locations \emph{and} the number of measurements per location, which may quickly cause these models to surpass the scope of feasible calculation.
+
+Furthermore, statistical modelling with Gaussian processes requires choosing a spatiotemporal covariance model which yields a positive semidefinite matrix on \emph{any} set of inputs \citep{GPML-Book-2006}. The class of valid covariance functions for a Gaussian process are mathematically convenient to work with in such regression contexts, but Gaussian process regression does impose further restrictions on how we choose to represent the covariance among observations in a spatiotemporal data setting. 
 
 Due to these computational difficulties, many statisticians and machine learning researchers have sought to develop algorithms for fitting a Gaussian process with reduced computational overhead. Prominent well-studied and broadly applicable methods for accomplishing this task include approximations using induced latent variables \citep{Quinonero-Sparse-GP-2005}, sparse variational Gaussian processes \citep{Titsias-SVGP-2009}, and Vecchia approximations \citep{Katzfuss-Vecchia-2021}. However, these methods all require some degree of approximation, trading the exactness of a solution for increased algorithmic efficiency. 
 
@@ -284,9 +289,7 @@ The ICM kernel is an example of a \emph{separable} kernel, as the Gram matrix in
 \subsection{Kalman Filtering}
 \label{subsec:kalman}
 
-The Kalman filter (KF), introduced and eponymously named for Rudolf E. K{\'a}lm{\'a}n \citeyearpar{Kalman-Filter-1960}, is a technique for recursively estimating the unobserved (latent) states of a linear dynamical system from a sequence of noisy and indirect measurements of the system. K{\'a}lm{\'a}n originally derived the filter as the means to solving an optimal linear estimation problem via orthogonal projections. However, the Kalman filter also lends itself to a statistical interpretation, as the filter is equivalent to the solution of a Bayesian inference problem for a \emph{linear Gaussian state-space model} whose posterior distribution is updated sequentially as new observations are recorded \citep{Bayesian-Filter-Book-2023}.
-
-In this subsection of the paper, we will formally describe the Kalman filter, and the linear Gaussian state-space model which underpins the statistical viewpoint for the Kalman filter. These statistical properties of interest are central to the algorithm presented by \citet{Todescato-Efficient-2020}.
+The Kalman filter (KF), introduced and eponymously named for Rudolf E. K{\'a}lm{\'a}n \citeyearpar{Kalman-Filter-1960}, is a technique for recursively estimating the unobserved (latent) states of a linear dynamical system from a sequence of noisy and indirect measurements of the system. K{\'a}lm{\'a}n originally derived the filter as the means to solving an optimal linear estimation problem via orthogonal projections. However, the Kalman filter also lends itself to a statistical interpretation, as the filter is equivalent to the solution of a Bayesian inference problem for a \emph{linear Gaussian state-space model} whose posterior distribution is updated sequentially as new observations are recorded \citep{Bayesian-Filter-Book-2023}. In this subsection of the paper, we will formally describe the Kalman filter, and the linear Gaussian state-space model which underpins the statistical viewpoint for the Kalman filter. These statistical properties of interest are central to the algorithm presented by \citet{Todescato-Efficient-2020}.
 
 \begin{definition}[State Space Model]
 \label{def:SSM}  
@@ -320,8 +323,8 @@ In such cases, the standard method for recovering the parameters describing the 
     
     \begin{algorithmic}[1]
         \Require
-            \Statex \hspace{\algorithmicindent} $\widehat{\bfm}(0 \mid -1)$: expected value of the initial state $\bfs(0)$       
-            \Statex \hspace{\algorithmicindent} $\bfSigma(0 \mid -1)$: variance of the initial latent state $\bfs(0)$
+            \Statex \hspace{\algorithmicindent} $\widehat{\bfm}(0 \mid 0)$: expected value of the initial state $\bfs(0)$       
+            \Statex \hspace{\algorithmicindent} $\bfSigma(0 \mid 0)$: variance of the initial latent state $\bfs(0)$
         \For{$j = 1$ to $J$}
             \Statex \texttt{\# Prediction Step:}
             \State $\widehat{\bfm}(j \mid j-1) = \bfA(j-1)\widehat{\bfm}(j-1 \mid j-1)$
@@ -359,6 +362,7 @@ Suppose that we have some \emph{compact} state space $\calX \subseteq \bbR^{P}$ 
 
 We wish to perform inference on the values of some function $f: \calX \times \bbR^{+} \to \bbR$, which we assume to be a realization of some zero-mean Gaussian process $f \sim \calGP(0, K)$, for some kernel function $K$. Furthermore, at times $t_{0} < t_{1} < \dots$, we record noisy observations of the form 
 \begin{equation}
+\label{eq:todescato-obs-model}
     y_{i}(t_{j}) = f(x_{i}, t_{j}) + v_{i}(t_{j}), \quad v_{i}(t_{j}) \sim \calN(0, \sigma^{2}) 
 \end{equation}
 Importantly, the set of observations which are recorded at each time instant $t_{j}$ may differ. For each time instant $t_{j}$, we let $\calM_{j} \subseteq \calI$ represent the observations recorded at time $t_{j}$, with $M_{j} := \abs{\calM_{j}}$. 
@@ -410,10 +414,6 @@ For any time instance $t_{j}$ where measurements are recorded, let $\tau_{j} := 
         \end{align}
     \end{subequations}
 \end{definition}
-
-
-
-
 Let $\overline{K}_{s} \in \bbR^{M \times M}$ be the Gram matrix for the spatial kernel $K_{s}$ applied to $\calI$. The spatiotemporal dynamics for the desired system are discretized by the following pair of equations, which guide the evolution from one observation time to the next:
 \begin{subequations}
     \label{eq:todescato-discrete-evolution}
@@ -434,6 +434,8 @@ The Markovian dynamics which impact \Cref{eq:todescato-discretized-state,eq:tode
 \end{subequations}
 The matrix $I_{j}$ in \Cref{eq:todescato-discretize-Cj} is an indicator matrix $I_{j} \in \{0, 1\}^{M_{j} \times M}$ which selects for the subset of $x_{i} \in \calM_{j}$ from the entire location set $\calI$.
 
+Given the definitions above, we now present a pseudocode implementation of the primary Kalman-based Gaussian process regression algorithm suggested by \citeauthor{Todescato-Efficient-2020}. This algorithm has two inputs: a desired estimation time $t \in \bbR^{+}$, and a dataset $\calD$ containing observations of the form $y_{i}(t_{j}) = f(x_{i}, t_{j}) + v_{i}(t_{j})$, as described by \Cref{eq:todescato-obs-model}.
+
 \begin{algorithm}
     \caption{Kalman-based GP regression on $\calI$ at query time $t \in \bbR^{+}$}
     \label{alg:todescato-kalman-GP}
@@ -443,19 +445,19 @@ The matrix $I_{j}$ in \Cref{eq:todescato-discretize-Cj} is an indicator matrix $
         \Require 
             \Statex \hspace{\algorithmicindent} $(F,G,H)$: state-space representation of $S_r(\omega)$
             \Statex \hspace{\algorithmicindent} $\sigma^2$: measurement noise variance
-            \Statex \hspace{\algorithmicindent} $\calI$: set of input locations
+            \Statex \hspace{\algorithmicindent} $\calI$: set of valid input locations
             \Statex \hspace{\algorithmicindent} $K_s(\cdot,\cdot)$: spatial kernel function
             \Statex \hspace{\algorithmicindent} $\gamma(\cdot)$: temporal kernel function
             \Statex \hspace{\algorithmicindent} $\bfSigma_0$: solution of Lyapunov equation $FX+XF^{\sfTsmall}+GG^{\sfTsmall}=0$
 
-        \State Initialize $\widehat{\bfs}(0\mid -1) = \mathbf{0}$ and $\bfSigma(0\mid -1)=\bfI\otimes\bfSigma_0$.
+        \State Initialize $\widehat{\bfs}(0\mid 0) = \mathbf{0}$ and $\bfSigma(0\mid 0)=\bfI\otimes\bfSigma_0$
+        \State Set $j \gets 0$
 
         \Statex \texttt{Kalman estimates:}
-        \While{$t_{j+1} \le t$}
+        \While{$j \le J$ and $t_{j+1} \le t$}
             \State Compute $A(j), C(j), Q(j), R(j)$ using \Crefrange{eq:todescato-discretize-Aj}{eq:todescato-discretize-Rj}
             \State Apply the Kalman filter (\Cref{alg:kalman-filter}) to compute $\widehat{\bfs}(j+1 \mid j+1)$ and $\bfSigma(j+1 \mid j+1)$
-            \State $\widehat{\mathbf{s}}(t) = \widehat{\mathbf{s}}(j+1\mid j+1)$
-            \State $\bfSigma^{\bfs}(t)=\bfSigma(j+1\mid j+1)$
+            \State $j \gets j+1$
         \EndWhile 
 
         \Statex \texttt{Open-loop prediction:}
@@ -465,13 +467,15 @@ The matrix $I_{j}$ in \Cref{eq:todescato-discretize-Cj} is an indicator matrix $
 
         \Statex \texttt{Process Estimate:}
         \State $\widehat{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\widehat{\bfs}(t)$
-        \State $\bfSigma^{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\bfSigma^{\bfs}(t)(\bfI \otimes H)^{\sfTsmall}\overline{K}_{s}^{1/2}$
+        \State $\bfSigma^{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\bfSigma^{\bfs}(t)(\bfI \otimes H)^{\sfTsmall}\,\overline{K}_{s}^{1/2}$
         \State \Return $\widehat{\bff}(t)$ and $\bfSigma^{\bff}(t)$
     \end{algorithmic}
     \end{spacing}
 \end{algorithm}
 
-\Cref{alg:todescato-kalman-GP} is a cleaned-up representation of the first algorithm presented by \citeauthor{Todescato-Efficient-2020} in their paper. Instead of presenting the algorithm as a continuous, non-terminating function which `loops' over all $t \in \bbR^{+}$, we have altered the formulation of the algorithm to explicitly demonstrate the Kalman filtering aspect, and the subsequent estimation of the change in the process post-filtering. 
+\Cref{alg:todescato-kalman-GP} is a cleaned-up representation of the primary Kalman-based Gaussian process regression algorithm presented by \citeauthor{Todescato-Efficient-2020} in their paper, with some alterations to make the pseudocode simpler to understand. Instead of presenting the algorithm as a continuous, non-terminating function which `loops' over all $t \in \bbR^{+}$, we have altered the formulation of the algorithm to explicitly demonstrate the Kalman filtering aspect, and the subsequent estimation of the change in the process post-filtering. 
+
+The loop in this algorithm iteratively performs Kalman filtering updates to the mean and covariance until one of the two loop conditions is falsified; either $t_{j} \le t < t_{j+1}$ or $t > t_{J}$, and there are no further observations to feed into the Kalman filtering loop in the algorithm. Once this loop condition is broken, the algorithm makes an `open-loop' prediction of the state at time $t$ using the matrices $F, G, H$ from the state-space representation to describe the continuous-time dynamics affecting further changes to the state from time $t_{j}$ to time $t$. These predictions are then passed through the Gaussian process estimation 
 
 Though it is not an inherent part of the algorithm, in practice, \Cref{alg:todescato-kalman-GP} should be treated as an \emph{online} algorithm, with the most recent Kalman-filtered state maintained in memory until a new set of observations are recorded and transmitted. Storing these terms in local memory will both allow for the estimation of current-time measurements based on a continuous-time stochastic dynamical equation, and it prevents the need to recompute previous states when subsequent measurements are transmitted and the updates to the current estimated states are desired.
 
@@ -484,11 +488,13 @@ As part of their paper, \citeauthor{Todescato-Efficient-2020} describe and prove
     \label{eq:dynamic-rep-mean}
         \widehat{f}(x, t) = \overline{K}_{s}(x, \calI)\overline{K}_{s}(\calI, \calI)\widehat{\bff}(t),
     \end{equation}
-    and the variance of this estimator is given by 
+    and the variance of this estimator is given by
+    {\small 
     \begin{equation}
     \label{eq:dynamic-rep-var}
-        \var{\widehat{f}(x, t) \mid \calD} = \gamma(0)\Big[\overline{K}_{s}(x, x) - \overline{K}_{s}(x, \calI)\overline{K}_{s}(\calI, \calI)^{-1}\big(\overline{K}_{s}(\calI, \calI) - \bfSigma^{\bff}(t)\big)\overline{K}_{s}(\calI, \calI)^{-1}\overline{K}_{s}(\calI, x)\Big]
+        \operatorname{Var}\big(\widehat{f}(x, t) \mid \calD\big) = \gamma(0)\Big[\overline{K}_{s}(x, x) - \overline{K}_{s}(x, \calI)\overline{K}_{s}(\calI, \calI)^{-1}\big(\overline{K}_{s}(\calI, \calI) - \bfSigma^{\bff}(t)\big)\overline{K}_{s}(\calI, \calI)^{-1}\overline{K}_{s}(\calI, x)\Big]
     \end{equation}
+    }
 \end{theorem}
 
 The key concept behind the authors' proof of \Cref{thm:dynamic-representer-theorem} is that the assumptions regarding the evolution of the spatiotemporal dynamical system yield a strong conditional independence result. In particular, the value of $f(x, t)$ is \emph{conditionally independent} of the state of the dynamical system at any other time given the observations at time $t$. More formally, for any location $x \in \calX$ and measurement time $t \in \bbR$, we have that
@@ -506,10 +512,13 @@ In addition to defining and proving the Dynamic Representer Theorem, the authors
 
 In addition to the presentation of their primary Kalman-enhanced Gaussian process regression algorithm, \citeauthor{Todescato-Efficient-2020} also describe a second algorithm which allows for the input location space $\calI$ to be adaptively changed over the course of the study, so that we have input location sets $\calI(1), \dots, \calI(J)$, instead of a pre-fixed set $\calI$ representing all possible measurement locations.
 
-This version of the algorithm lends itself toward many practical applications, as this allows for the measurement equipment to be moved from one location to another without invalidating some of the authors' earlier assumptions. The canonical example given by \citeauthor{Todescato-Efficient-2020} is a group of aerial vehicles which measure meteorological data near clouds, but there are many other situations where adaptive input locations may be desired, e.g. data collected by researchers at a given site.
+This version of the algorithm lends itself toward many practical applications, as this allows for the measurement equipment to be moved from one location to another without invalidating some of the authors' earlier assumptions. The canonical example given by \citeauthor{Todescato-Efficient-2020} is a group of aerial vehicles which measure meteorological data near clouds, but there are many other situations where adaptive input locations may be desired, e.g. researchers choosing where to collect measurements based on some heuristic decision-making system. 
 
-% \subsection{Multi-Output Dynamical System}
-\subsection{\colorbox{yellow}{Multi-Output Dynamical System}}
+If there is some adaptive strategy for choosing input locations, the cardinality of the set $\calI(1) \cup \calI(2) \cup \cdots \cup \calI(j)$ representing all input locations up to time $t_{j}$ can grow without bound as $j$ increases. This leads to two issues which could arise with \Cref{alg:todescato-kalman-GP}; the amount of memory needed to store previous estimates may grow unboundedly and the Kalman filter needs to be re-run for \emph{every} location added to the set of valid input locations. Both of these issues are significant detriments to this algorithm which greatly inflate the memory requirement for storing past results and the runtime of the entirety of the algorithm.
+
+In their paper, \citeauthor{Todescato-Efficient-2020} propose an alteration to \Cref{alg:todescato-kalman-GP} which circumvents these issues in the adaptive location setting by updating the filter at newly-added points using \Cref{alg:todescato-kalman-GP} and shedding certain input locations to reduce the ongoing memory in use. The purpose of this alternate algorithm is to avoid exceeding some fixed memory allocation budget. The ability to implement an algorithm which adaptively removes unwanted points without significantly biasing or impacting the overall model is another significant advantage of the Kalman-based GP regression method which could not be fulfilled when performing a `pure' Gaussian process regression.
+
+\subsection{Multi-Output Dynamical System}
 Now, we may focus on the adaptation of the Kalman-enhanced regression algorithm for a multi-output Gaussian process. In addition to the two previously-stated assumptions on the nature of the dynamical system, we must make one additional assumption regarding the observations in the dynamical model.
 \begin{assumption}[Missingness of Vector-Valued Observations]
 \label{ass:all-or-nothing}
@@ -517,55 +526,101 @@ Now, we may focus on the adaptation of the Kalman-enhanced regression algorithm 
 \end{assumption}
 \Cref{ass:all-or-nothing} is a simplifying assumption which ensures that there are not any partially-recorded or partially-unrecorded vectors of information. Such an assumption was absent from the prior paper on this topic, as their algorithm focused solely on scalar-valued responses, so it would not be possible for the measurement $\bfy_{i}(t_{j})$ to be partially observed.
 
+The overall observation model for the multi-output Gaussian process version of the spatiotemporal dynamical system is quite similar to the observation model in \Cref{eq:todescato-obs-model} proposed by \citeauthor{Todescato-Efficient-2020} for the univariate case. For any point $x_{i} \in \calI$ and measurement time $t_{j}$, we model the observed function value as a noisy observation of the underlying process, with
+\begin{equation}
+\label{eq:MOGP-obs-model}
+    \bfy_{i}(t_{j}) = f(x_{i}, t_{j}) + \bfv_{i}(t_{j}), \quad \bfv_{i}(t_{j}) \sim \calN(\mathbf{0}, \bfV),
+\end{equation}
+where $\bfV \in \bbR^{D \times D}$ is a fixed, known, covariance matrix for the observational noise.
+
+Our extension of \Cref{alg:todescato-kalman-GP} focuses on two key changes, which are intertwined with one another. The primary alteration which we make to the authors' provided algorithm is to extend their methodology so that we can derive estimators for the current state in the multi-output process and the corresponding multivariate dynamical system. In addition to this change, our algorithm also relaxes \Cref{ass:todescato-kernel-sep} by allowing the `full' kernel $K$ to be a sum of $Q$ multi-output kernels which are themselves time-separable, as in the LMC construction in \Cref{eq:LMC-gram}. Suppose that the kernel function $K$ can be written as an LMC kernel of the form
+\begin{equation}
+    K((x, t, d), (x', t', d')) = \sum_{q=1}^{Q} \gamma^{(q)}(\abs{t - t'}) K_{s}^{(q)}(x, x') \bfB^{(q)}(d, d'),
+\end{equation}
+where each temporal covariance function $\gamma^{(1)}(\cdot) \dots, \gamma^{(Q)}(\cdot)$ individually satisfies \Cref{ass:todescato-psd-order}, with the corresponding power spectrum $S_{q}(\omega)$ is of the order $2r_{q}$. For ease of notation, we define $R_{Q} := \sum_{q=1}^{Q}r_{q}$ to be the sum of the orders for the $Q$ individual temporal kernels. We define our model matrices $\overline{F} \in \bbR^{R_{Q} \times R_{Q}}$, $\overline{G} \in \bbR^{R_{Q} \times Q}$, and $\{\   widetilde{H}_{q}\}_{q=1}^{Q} \in \bbR^{1 \times R_{Q}}$ for this set of temporal kernels by the following:
+\begin{subequations}
+    \label{eq:MOGP-companion-matrices}
+    \begin{align}
+        \overline{F} &= \begin{bmatrix}
+            F_{1} & \mathbf{0} & \cdots & \mathbf{0}\\
+            \mathbf{0} & F_{2} & \cdots & \mathbf{0}\\
+            \vdots & \vdots & \ddots & \vdots\\
+            \mathbf{0} & \mathbf{0} & \cdots & F_{Q}
+        \end{bmatrix} \in \bbR^{R_{Q} \times R_{Q}} \label{eq:MOGP-companion-F}\\
+        \overline{G} &= \begin{bmatrix}
+            G_{1} & \mathbf{0} & \cdots & \mathbf{0}\\
+            \mathbf{0} & G_{2} & \cdots & \mathbf{0}\\
+            \vdots & \vdots & \ddots & \vdots\\
+            \mathbf{0} & \mathbf{0} & \cdots & G_{Q}
+        \end{bmatrix} \in \bbR^{R_{Q} \times Q} \label{eq:MOGP-companion-G}\\
+        \widetilde{H}_{q} &= \begin{bmatrix}
+            \mathbf{0} & \cdots & H_{q} & \cdots & \mathbf{0}
+        \end{bmatrix} \in \bbR^{1 \times R_{Q}} \label{eq:MOGP-companion-Hq}
+    \end{align}
+\end{subequations}
+For the matrices $\widetilde{H}_{q}$ in \Cref{eq:MOGP-companion-Hq}, all entries are zero aside from the $q^{\textrm{th}}$ block in the row matrix, which is equal to the companion matrix $H$ for the temporal kernel $\gamma^{(q)}$ from \Cref{eq:companion-model-matrix-H}. Using these newly-defined companion matrices, we can rewrite the discretization of the state space model which defines the Kalman filter.
+\begin{subequations}
+    \label{eq:MOGP-discretize-parameters}
+    \begin{align}
+        A(j) &= e^{\tau_{j}(\bfI_{MD} \otimes F)} \in \bbR^{MDR_{Q} \times MDR_{Q}} \label{eq:MOGP-discretize-Aj}\\
+        C(j) &= I_{j}\sum_{q=1}^{Q}\big[\overline{K}_{s}^{(q)}\big]^{1/2}(\bfI_{MD} \otimes \widetilde{H}_{q}) \in \bbR^{M_{j}D \times MDR_{Q}} \label{eq:MOGP-discretize-Cj}\\
+        Q(j) &= \bfI_{MD} \otimes \left(\int_{0}^{\tau_{j}}\big(e^{\tau\overline{F}}\big)\overline{G}\,\overline{G}^{\sfTsmall}\big(e^{\tau\overline{F}}\big)\dx[\tau]\right) \in \bbR^{MDR_{Q} \times MDR_{Q}} \label{eq:MOGP-discretize-Qj}\\
+        R(j) &= \bfI_{M_{j}} \otimes \bfV \in \bbR^{M_{j}D \times M_{j}D} \label{eq:MOGP-discretize-Rj}
+    \end{align}
+\end{subequations}
+The four matrices above are interpreted in the same manner as those in \Crefrange{eq:todescato-discretize-Aj}{eq:todescato-discretize-Rj} and serve the same purpose in guiding the evolution of the dynamical system over time. However, the dimensions of these matrices have grown significantly, due to both the increase in the number of outputs and by taking a direct sum over all of the individual temporal kernels. 
+
+Using the model and Kalman filtering matrices, we are ready to define our Kalman-enhanced MOGP regression algorithm.
 \begin{algorithm}
-    \caption{\colorbox{yellow}{Kalman-based MOGP regression on $\calI$ at query time $t \in \bbR^{+}$}}
+    \caption{Kalman-based MOGP regression on $\calI$ at query time $t \in \bbR^{+}$}
     \label{alg:kalman-MOGP-regression}
 
     \begin{spacing}{1.1}
     \begin{algorithmic}[1]
         \Require 
-            \Statex \hspace{\algorithmicindent} $(F,G,H)$: state-space representation of $S_r(\omega)$
-            \Statex \hspace{\algorithmicindent} $\sigma^2$: measurement noise variance
-            \Statex \hspace{\algorithmicindent} $\calI$: set of input locations
-            \Statex \hspace{\algorithmicindent} $K_s(\cdot,\cdot)$: spatial kernel function
-            \Statex \hspace{\algorithmicindent} $\gamma(\cdot)$: temporal kernel function
-            \Statex \hspace{\algorithmicindent} $\bfSigma_0$: solution of Lyapunov equation $FX+XF^{\sfTsmall}+GG^{\sfTsmall}=0$
+            \Statex \hspace{\algorithmicindent} $\{(F_{q},G_{q},H_{q})\}_{q=1}^{Q}$: state-space representation(s) for $S_{r, q}(\omega)$
+            \Statex \hspace{\algorithmicindent} $\bfV \in \bbR^{D \times D}$: measurement noise covariance matrix
+            \Statex \hspace{\algorithmicindent} $\calI$: set of valid input locations
+            \Statex \hspace{\algorithmicindent} $\{K_s^{(q)}(\cdot,\cdot)\}_{q=1}^{Q}$: spatial kernel function(s)
+            \Statex \hspace{\algorithmicindent} $\{\gamma^{(q)}(\cdot)\}_{q=1}^{Q}$: temporal kernel function(s)
+            \Statex \hspace{\algorithmicindent} $\bfSigma_0$: solution of Lyapunov equation $\overline{F}X+X\overline{F}^{\sfTsmall}+\overline{G}\,\overline{G}^{\sfTsmall}=0$
 
-        \State Initialize $\widehat{\bfs}(0\mid -1) = \mathbf{0}$ and $\bfSigma(0\mid -1)=\bfI\otimes\bfSigma_0$.
+        \State Create $\overline{F}, \overline{G}, \{\widetilde{H}_{q}\}_{q=1}^{Q}$ per \Crefrange{eq:MOGP-companion-F}{eq:MOGP-companion-Hq}
+        \State Initialize $\widehat{\bfs}(0\mid 0) = \mathbf{0}$ and $\bfSigma(0\mid 0)=\bfI\otimes\bfSigma_0$
+        \State Set $j \gets 0$
 
         \Statex \texttt{Kalman estimates:}
-        \While{$t_{j+1} \le t$}
-            \State Compute $A(j), C(j), Q(j), R(j)$ using \Crefrange{eq:todescato-discretize-Aj}{eq:todescato-discretize-Rj}
+        \While{$j \le J$ and $t_{j+1} \le t$}
+            \State Compute $A(j), C(j), Q(j), R(j)$ using \Crefrange{eq:MOGP-discretize-Aj}{eq:MOGP-discretize-Rj}
             \State Apply the Kalman filter (\Cref{alg:kalman-filter}) to compute $\widehat{\bfs}(j+1 \mid j+1)$ and $\bfSigma(j+1 \mid j+1)$
-            \State $\widehat{\mathbf{s}}(t) = \widehat{\mathbf{s}}(j+1\mid j+1)$
-            \State $\bfSigma^{\bfs}(t)=\bfSigma(j+1\mid j+1)$
+            \State $j \gets j+1$
         \EndWhile 
 
         \Statex \texttt{Open-loop prediction:}
         \State $\tau = t - t_j$
-        \State $\widehat{\bfs}(t) = e^{\tau(\bfI \otimes F)}\widehat{\bfs}(j \mid j)$
-        \State $\bfSigma^{\bfs}(t) = \big(e^{\tau(\bfI \otimes F)}\big)\bfSigma(j|j)\big(e^{\tau(\bfI \otimes F)}\big)^{\sfTsmall}$
+        \State $\widehat{\bfs}(t) = e^{\tau(\bfI \otimes \overline{F})}\widehat{\bfs}(j \mid j)$
+        \State $\bfSigma^{\bfs}(t) = \big(e^{\tau(\bfI \otimes \overline{F})}\big)\bfSigma(j|j)\big(e^{\tau(\bfI \otimes \overline{F})}\big)^{\sfTsmall}$
 
         \Statex \texttt{Process Estimate:}
         \State $\widehat{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\widehat{\bfs}(t)$
-        \State $\bfSigma^{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\bfSigma^{\bfs}(t)(\bfI \otimes H)^{\sfTsmall}\overline{K}_{s}^{1/2}$
+        \State $\bfSigma^{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\bfSigma^{\bfs}(t)(\bfI \otimes H)^{\sfTsmall}\,\overline{K}_{s}^{1/2}$
         \State \Return $\widehat{\bff}(t)$ and $\bfSigma^{\bff}(t)$
     \end{algorithmic}
     \end{spacing}
 \end{algorithm}
 
-% \section{Methods}
-\section{\colorbox{yellow}{Methods}}
+For the sake of consistency, \Cref{alg:kalman-MOGP-regression} is presented under the assumption that the spatial kernel is an LMC kernel formed by a linear combination of $Q$ latent Gaussian processes. As above, the ICM can be viewed as a special case of the LMC kernel which arises when $Q = 1$. This algorithm is quite similar to \cref{alg:todescato-kalman-GP}, which is ideal, as the algorithm given by \citeauthor{Todescato-Efficient-2020} corresponds to a special case of \Cref{alg:kalman-MOGP-regression} where $Q = 1$ and $D = 1$. 
+
+\clearpage
+\section{Methods}
 \label{sec:methods}
 
 A major theoretical benefit of the algorithm proposed by \citeauthor{Todescato-Efficient-2020} -- and our multi-output extension in \Cref{alg:kalman-MOGP-regression} -- is that under the necessary assumptions presented above, these algorithms provide minimum variance estimators with a significant reduction in the required computational resources. In order to determine if this goal is met in a practical setting, it is necessary to assess the efficacy of the proposed algorithm based on testable, reproducible results.
 
-To evaluate the performance of \Cref{alg:kalman-MOGP-regression} we compare the accuracy and speed of \Cref{alg:kalman-filter} to a `naive' multi-output Gaussian process regression algorithm. The code for comparing these algorithms are created in Python, and utilize the \texttt{GPyTorch} library \citep{GPyTorch-Library-2018} for the implementation of computational tasks involving Gaussian processes.
+To evaluate the performance of \Cref{alg:kalman-MOGP-regression}, we compare the accuracy and speed of \Cref{alg:kalman-filter} to a `naive' multi-output Gaussian process regression algorithm. The code for comparing these algorithms are created in Python, and utilize the \texttt{GPyTorch} library \citep{GPyTorch-Library-2018} for the implementation of computational tasks involving Gaussian processes.
 
 \subsection{Simulations}
-The focus of our practical simulation study is to compare \Cref{alg:kalman-MOGP-regression} to a `traditional' multi-output Gaussian process regression method. 
-
-To accomplish this, we generate synthetic data according to a multivariate Gaussian process model, and compare the predictive accuracy and overall runtime of these algorithms using a set of four multi-output Gaussian process kernels. The four kernels which are compared are described by the following equations:
+The focus of our practical simulation study is to compare \Cref{alg:kalman-MOGP-regression} to a `traditional' multi-output Gaussian process regression method. To accomplish this, we generate synthetic data according to a multi-output Gaussian process model, and compare the predictive accuracy and overall runtime of these algorithms using a set of four multi-output Gaussian process kernels. The four kernels which are compared are described by the following equations:
 \begin{subequations}
     \label{eq:simulation-kernels}
     \begin{align}
@@ -585,45 +640,59 @@ These four kernels describe similar, but distinct, covariance structures for a m
         \textbf{Temporal LMC:} \quad K((x, t, d), (x', t', d')) &= \sum_{q=1}^{Q}\exp\!\Big(-\frac{\abs{t - t'}}{q}\Big)C_{7/2 - q}(x, x')\bfB^{(q)}(d, d') \label{eq:simulation-lmc-temporal-kernel}
     \end{align}
 \end{subequations}
-The MOGP kernels shown in \Cref{eq:simulation-indep-kernel,eq:simulation-icm-kernel} are created by taking the product of a Gaussian RBF kernel over the spatial variables with a Mat{\'e}rn(1/2) kernel for the temporal variables, and multiplying by the corresponding matrix entry for the dimensions $(d, d')$. 
+The MOGP kernels shown in \Cref{eq:simulation-indep-kernel,eq:simulation-icm-kernel} are created by taking the product of a Gaussian RBF kernel over the spatial variables with a Mat{\'e}rn(1/2) kernel for the temporal variables, and multiplying by the corresponding matrix entry for the dimensions $(d, d')$. All spatial and temporal kernels in the study have unit variance and unit length-scale, with one exception: the $q^{\textrm{th}}$ temporal covariance in the `temporal LMC' setting (\Cref{eq:simulation-lmc-temporal-kernel}) has a length-scale of $q$.
 
 The kernels in \Cref{eq:simulation-lmc-kernel,eq:simulation-lmc-temporal-kernel} are created by taking the sum of three Mat{\'e}rn kernels with different parameters ($\nu = \{1/2, 3/2, 5/2\}$) for the spatial covariance, and multiplying these by an associated kernel for the temporal covariance.
 
-The simulation study was carried out on a computing server hosted by the Department of Statistical Sciences at the University of Toronto. To effectively run the simulations, we used \texttt{Python 3.12.5} \citep{python-3-12-5} with the \texttt{gpytorch} \citep{GPyTorch-Library-2018} library providing significant assistance.
+The simulation study was carried out on a computing server hosted by the Department of Statistical Sciences at the University of Toronto. The code for the simulations is based on the MATLAB code by \citeauthor{Carron-ML-Kalman-2016} and \citeauthor{Todescato-Efficient-2020}, which is available in a public GitHub repository hosted by the research group including the authors of these two papers. To effectively run the simulations, we used \texttt{Python 3.12.5} \citep{python-3-12-5} with significant usage of the \texttt{gpytorch} \citep{GPyTorch-Library-2018} library to more easily work with the Gaussian process models. 
 
-% \subsection{Code Implementation}
+\paragraph{Simulation Design:} For the simulations, synthetic data were generated from a zero-mean multi-output Gaussian process at 150 evenly-spaced observation locations $\{x_{1}, \dots, x_{150}\}$ on a one-dimensional spatial grid. Each observation $x_{i}$ was measured at a total of 21 evenly-spaced time instances $t \in \{0, 0.5, \dots, 10\}$. 
 
-% \subsection{Replication}
+For each collection of simulation settings, 80\% of the locations were chosen uniformly at random to have available measurements, while the remaining 20\% did not have available measurements, and were used solely for prediction. Each measurement from the multi-output Gaussian process has some added \emph{independent} Gaussian random noise, all of which were generated according to the distribution $\bfv_{i}(t_{j}) \simiid \calN(\mathbf{0}, \bfI/4)$. 
 
-% \subsection{Extension}
+For the independent kernel, the output variances were drawn as $\sigma^{2}_{d} \sim \mathrm{Unif}(0.5, 1.5)$. For the ICM, the coregionalization matrix was drawn as $\bfB = \bfA\bfA^{\top} + \kappa\bfI$, where $\bfA \in \bbR^{D \times D}$ has standard normal entries and $\kappa = 10^{-4}$. Both LMC kernels use $Q = 3$ latent processes, each with a rank-one coregionalization matrix $\bfB^{(q)} = \bfa_{q}\bfa_{q}^{\top} + 0.05\,\bfI$.
 
-% \section{Results}
-\section{\colorbox{yellow}{Results}}
-\label{sec:results}
+To study the effects of incomplete datasets on the reliability of the estimates, a proportion $\rho$ of the collected observations $\bfy(x_{i}, t_{j})$ were chosen uniformly to be removed from the dataset. The vectors selected to be dropped by this procedure are missing completely at random (MCAR), with no quota given on the number of observations which may be dropped per observation location or measurement time.
+
+The simulation study implements a full-factorial design over three factors; the MOGP kernel function (the four kernels in \Cref{eq:simulation-kernel-eqns}), the dimensionality of the outputs ($D \in \{1, 2, 3, 5\}$), and the proportion of deleted observations ($\rho \in \{0, 0.2, 0.5\}$), for a total of 48 simulation settings. For each of these 48 settings, we generated 20 independent replicate datasets, giving a total of 960 simulated datasets.
+
+\paragraph{Estimators and Evaluation:}
+For each of the 960 simulated datasets in the simulation study, we fitted and compared two estimators. The first estimator is the batch multi-output GP, which conditions on all of the available measurements, and is the standard estimator for a multi-output Gaussian process. The second is the functional form given by the output of \Cref{alg:kalman-MOGP-regression}, which uses the Kalman filter to sequentially process observations. 
+
+In both settings, we assume full knowledge of the true kernel function and noise covariance matrix which were used in generating the observations. As such, there is no optimization or estimation over unknown hyperparameters in either of these algorithms. In each simulation, we focus on two values; \emph{Estimation} and \emph{Prediction}.
+
+In this setting, estimation refers to the denoising which tries to recover the latent state corresponding to locations in the observation group, while prediction focuses on estimating the true state at the held-out locations. For each of these methods, we look at the root mean squared error (RMSE) and mean absolute error (MAE) of the estimates from the  estimates compared to the true latent states $f(x_{i}, t_{j})$ over all possible locations and observation times. In addition to these two accuracy metrics, we also examine the empirical coverage of the 95\% credible intervals derived from the posterior mean and variance estimates. Lastly, we compare the wall-clock runtime of these algorithms to get a sense for how these methods scale with the dimensionality of the inputs.
+
+\subsection{Results}
+
+Here, we present our results for the simulation study described in the previous subsection. In the interest of saving space within the main body of the document, the plots are attached in \Cref{sec:figures} in the Appendix.
+
+The plots in \Cref{fig:rmse-plots,fig:mae-plots} generally show quite similar results. In all 48 simulation settings for the simulation study, the MOGP regression method seems to exhibit a slightly better overall fit than the Kalman-based method from \Cref{alg:kalman-MOGP-regression}. The discrepancy between these two methods appears to grow with the output dimension $D$, and it also seems to get wider for larger values of the missingness proportion $\rho$. This result, while somewhat disheartening, is to be expected, as these plots compare the RMSE and MAE for these methods across \emph{all} points $(x_{i}, t_{j}) \in \calX \times \bbR^{+}$, not solely for the measurements corresponding to the final observation time. By the structure of the respective methodologies, the fitted MOGP should minimize the squared error loss over the entire dataset $\calD$, while the Kalman-based method seeks to best learn the latent space representation at the time $t_{J}$, which may bias or impact the estimates from the earlier timestamps. For all of these simulations, the prediction error (both MAE and RMSE) is significantly larger than the corresponding error for estimation. Again, this is a fairly reasonable result, as the performance on the training set typically outperforms a hold-out or test dataset, but this is a much larger discrepancy than the actual difference between the two methods.
+
+As shown in \Cref{fig:coverage-plots}, the 95\% credible intervals created by both of these methods are quite reliable, with the error bars for these empirical proportions almost-always covering the desired 95\% threshold. This again signals that the two algorithms perform roughly similarly, and both are able to accomplish the desired task well, even if the MOGP may have a slightly superior performance. 
+
+Lastly, we will look at the wall-clock times in \Cref{fig:wall-clock-plots}. Overall, the estimation algorithms are quite similar in wall-clock time, with the MOGP taking slightly longer than the Kalman filtering method as the output dimension $D$ gets larger. This is reasonable, as the computational complexity of MOGP regression exhibits poorer scaling with respect to $D$ than that of Kalman filtering, so one may expect to see similar results arise as $D$ gets larger. However, the difference in wall-clock times for these two methods is extraordinarily large for the predictions on held-out locations. Again, this is a result which follows from the respective computational complexities of fitting estimates using these methods for held-out data, but this massive difference clearly demonstrates the value of alternative methods such as \Cref{alg:kalman-MOGP-regression}.
 
 \section{Discussion}
 \label{sec:discussion}
 
 \subsection{Conclusions}
 
-In this paper, we focus on developing a method for deriving estimates of a spatiotemporal multi-output Gaussian process by incorporating a Kalman filter to sequentially update the mean and covariance functions.
+In this paper, we focus on developing a method for deriving estimates of a spatiotemporal multi-output Gaussian process by incorporating a Kalman filter to sequentially update the mean and covariance functions, as originally proposed by \citeauthor{Todescato-Efficient-2020}. The extended version of their algorithm (\Cref{alg:kalman-MOGP-regression}) appears to be empirically quite successful, showcasing all of the strengths of the original algorithm which the authors proposed while also being robust to certain relaxations of their assumptions, which is best exemplified by the strong performance of the temporal LMC kernel.
 
 % This work primarily follows the algorithm proposed by \citeauthor{Todescato-Efficient-2020} to couple Gaussian process regression with Kalman filtering methods for scalar outcome variables.
 
-% \subsection{Limitations}
-\subsection{\colorbox{yellow}{Limitations}}
+\subsection{Limitations}
+One of the primary limitations of this work is that the simulations could be extended to a larger variety of data settings, and could be extended further to compare how the algorithms scale with higher-dimensional outputs. However, due to compute limitations, we were unable to run a suitable number of simulations with $D > 5$ outputs for the multi-output process. This limitation is somewhat ironic, as the primary goal of this investigation is to develop a method which can be implemented quicker and with less computational overhead than MOGP regression. 
 
 \subsection{Future Work}
+The primary manner in which this work may be extended is to evaluate the performance of \Cref{alg:kalman-MOGP-regression} on some real-world datasets from fields of scientific inquiry such as ecology, environmental science or geostatistics. Assessing the performance of the proposed algorithm on real scientific measurements can provide feedback on how well the assumptions in this report may be met in a practical setting, and how effective this algorithm is at modelling real spatiotemporal dynamical systems. Furthermore, testing the scientific applications of the modelling algorithm may lead to new ideas, such as the adaptive location space method discussed by \citeauthor{Todescato-Efficient-2020}.
 
-One potential area of continued algorithmic research related to this project is to examine the use of smoothing distributions such as the Rauch-Tung-Striebel (RTSS) smoother \citep{Rauch-RTSS-1965,Bayesian-Filter-Book-2023} or modified Bryson-Frazier smoother \citep{Colemont-MBF-Smoothing-2026}. The primary use of these smoothing distributions is to develop estimates for the latent states $f(x_{i}, t_{j})$ at \emph{any} observation time $t_{k}$ instead of solely performing inference on the latent states corresponding to the latest-observed measurements. The RTSS has been shown \citet{Hartikainen-Smoothing-GP-2010,Sarkka-Spatial-Kalman-2012} to be closely related to temporal Gaussian processes, which can enable the use of smoothers for the multi-output Gaussian process problems considered in this work.
+Another aspect in which this work can be extended is by increasing the complexity of the kernels and the data-generating process for the simulation study. In the simulations, we focused on observations coming from a pre-determined set $\calI$ containing evenly-spaced points on a line segment. Future simulations whose input locations are generated in a more complex manner such as randomly-sampled points on a 2-D plane or surface or via a space-filling curve may yield different behaviour than the simulations whose inputs are conveniently evenly-spaced along a line.
 
-Another related task of future interest is to examine the possibility of working with dynamical systems whose transformations are governed by unknown parameters. In this work, we have focused on dynamical systems where the mechanics underpinning the evolution of the system over time are fully known. However, this is a reductive assumption, which may be improved upon through incorporating unknown system parameters into the state transition model, instead of treating the evolution equations as fully specified and completely understood. For example, a parametric or semi-parametric kernel function may have hyperparameters which can be inferred jointly with the latent states in the dynamical system using variational inference or empirical Bayes methods. Similarly, in certain applied contexts, it may be helpful investigate extensions of this method which incorporate change-point detection methods so that these methods are capable of modelling a larger class of spatiotemporal dynamical systems. 
+Another area of continued algorithmic research related to this project is to examine the use of smoothing distributions such as the Rauch-Tung-Striebel (RTSS) smoother \citep{Rauch-RTSS-1965,Bayesian-Filter-Book-2023} or modified Bryson-Frazier smoother \citep{Colemont-MBF-Smoothing-2026}. The primary use of these smoothing distributions is to develop estimates for the latent states $f(x_{i}, t_{j})$ at \emph{any} observation time $t_{k}$ instead of solely performing inference on the latent states corresponding to the latest-observed measurements. The RTSS is known \citet{Hartikainen-Smoothing-GP-2010,Sarkka-Spatial-Kalman-2012} to be closely related to temporal Gaussian processes, which can enable the use of smoothers for the multi-output Gaussian process problems considered in this work.
 
-Further developments regarding these aspects of the work may be particularly applicable to `real-world' scientific research in fields such as epidemiology, ecology, environmental science, and control systems engineering, as the dynamical systems encountered in these research areas are often governed by time-varying behaviour, and we may lack complete knowledge of the corresponding mechanics driving the evolution of the system.
-
-% \bigskip
-% \bigskip
-
+A similar task of future interest is to examine if the algorithms discussed in this report may be adjusted to work with dynamical systems whose transformations are governed by some unknown parameters. In this work, we have focused on dynamical systems whose underlying mechanics are assumed to be fully understood. However, this is often a reductive and idealistic assumption in practice, and it may be improved upon by incorporating some unknown parameters into the state transition model, instead of assuming that the non-stochastic aspects of the dynamic evolution are fully known a priori. For example, a parametric or semi-parametric kernel function may have hyperparameters which can be inferred jointly with the latent states in the dynamical system using variational inference or empirical Bayes methods. Similarly, in certain applied contexts, it may be helpful investigate extensions of this method which incorporate change-point detection methods so that these methods are capable of modelling a larger class of spatiotemporal dynamical systems. Further developments regarding these aspects of the work may be particularly applicable to `real-world' scientific research in fields such as epidemiology, ecology, environmental science, and control systems engineering, as the dynamical systems encountered in these research areas are often governed by time-varying behaviour, and we may lack complete knowledge of the corresponding mechanics driving the evolution of the system.
 
 % References
 \newpage
@@ -648,8 +717,45 @@ All of the content in this document has been verified by the author, and is the 
 \label{sec:code} 
 For the sake of brevity, the code utilized in the creation of this project is not directly present in the appendix. All of the code used for this project is available in a public GitHub repository, located at \url{https://github.com/hotz1/Dynamical-Multitask-Prediction}. The \texttt{README.md} file in the root directory of the GitHub repository contains further information regarding these files.
 
+\newpage
+
 \section{Definitions and Technical Details}
 \label{sec:definitions}
+
+\begin{definition}[Positive-Definite Matrix]
+\label{def:pos-def-matrix}
+    A matrix $\bfM \in \bbR^{n \times n}$ is positive-definite (written $\bfM \succ 0$) if
+    \begin{equation}
+        v^{\sfTsmall}\bfM{v} > 0, \quad \textrm{for all}\; v \in \bbR^{n} \setminus \{0\}
+    \end{equation}
+    Similarly, $\bfM \in \bbR^{n \times n}$ is a positive-semidefinite (denoted $\bfM \succeq 0$) when the strict inequality above is loosened to $v^{\sfTsmall}\bfM{v} \ge 0$ for all vectors $v \in \bbR^{n}$.  
+\end{definition}
+
+\begin{definition}[Gram Matrix]
+\label{def:gram-matrix}  
+    For a kernel function $k: \calX \times \calX \to \bbR$, and inputs $x_{1}, \dots, x_{n} \in \calX$, the Gram matrix for the kernel function is given by
+    \begin{equation}
+        K = \begin{bmatrix}
+            k(x_{1}, x_{1}) & \cdots & k(x_{1}, x_{n})\\
+            \vdots & \ddots & \vdots\\
+            k(x_{n}, x_{1}) & \cdots & k(x_{n}, x_{n})
+        \end{bmatrix}
+    \end{equation}
+\end{definition}
+
+\begin{definition}[Positive-Definite Kernel]
+\label{def:pos-def-kernel}
+    A function $k: \calX \times \calX \to \bbR$ is a positive-definite kernel function if for any finite set $x_{1}, \dots, x_{n} \in \calX$ and real coefficients $c_{1}, \dots, c_{n} \in \bbR$, 
+    \begin{equation}
+        \sum_{i=1}^{n}\sum_{j=1}^{n}c_{i}c_{j}k(x_{i}, x_{j}) \ge 0
+    \end{equation}
+    Equivalently, for any set of inputs $x_{1}, \dots, x_{n} \in \calX$, the resulting Gram matrix $\bfG \in \bbR^{n \times n}$ for the kernel $k$ is positive-semidefinite.
+\end{definition}
+
+\begin{definition}[Cholesky Decomposition]
+\label{def:cholesky}
+    The Cholesky decomposition of an $n \times n$ matrix $\bfM \succeq 0$ is given by $\bfM = \bfL\bfL^{\sfTsmall}$, where $\bfL \in \bbR^{n \times n}$ is a real-valued lower-triangular matrix whose diagonal entries are all non-negative. 
+\end{definition}
 
 \begin{definition}[Reproducing Kernel Hilbert Space (RKHS)]
 \label{def:rkhs}
@@ -729,11 +835,79 @@ For the sake of brevity, the code utilized in the creation of this project is no
         \label{eq:isotropic-examples}
         \begin{align}
             \textnormal{\textbf{Mat{\'e}rn(1/2):}} &\quad C_{1/2}(x, x') = \sigma^{2}\exp\!\Big(-\frac{d}{\ell}\Big)\\
-            \textnormal{\textbf{Mat{\'e}rn(3/2):}} &\quad C_{3/2}(x, x') = \sigma^{2}\Big(1 + \frac{\sqrt{3}d}{\ell}\Big)\exp\!\Big(-\frac{\sqrt{3}d}{\ell})\\
-            \textnormal{\textbf{Mat{\'e}rn(5/2):}} &\quad C_{5/2}(x, x') = \sigma^{2}\Big(1 + \frac{\sqrt{5}d}{\ell} + \frac{{5}d^{2}}{3\ell^{2}}\Big)\exp\!\Big(-\frac{\sqrt{5}d}{\ell})\\
+            \textnormal{\textbf{Mat{\'e}rn(3/2):}} &\quad C_{3/2}(x, x') = \sigma^{2}\Big(1 + \frac{\sqrt{3}d}{\ell}\Big)\exp\!\Big(-\frac{\sqrt{3}d}{\ell}\Big)\\
+            \textnormal{\textbf{Mat{\'e}rn(5/2):}} &\quad C_{5/2}(x, x') = \sigma^{2}\Big(1 + \frac{\sqrt{5}d}{\ell} + \frac{{5}d^{2}}{3\ell^{2}}\Big)\exp\!\Big(-\frac{\sqrt{5}d}{\ell}\Big)\\
             \textnormal{\textbf{Gaussian (RBF):}} &\quad K_{\textrm{RBF}}(x, x') = \sigma^{2}\exp\!\Big(-\frac{d^{2}}{2\ell^{2}}\Big)
         \end{align}
     \end{subequations}
     In each of the isotropic kernel examples shown above, we define $d := \norm{x - x'}$. The hyperparameters $\sigma^{2}$ and $\ell$ respectively represent scales for the distance and the kernel output, allowing greater flexibility in models using these isotropic kernel functions.
 \end{definition}
+
+\newpage
+\section{Figures}
+\label{sec:figures}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{rmse_missing_frac=0.0.png}
+
+    \vspace{0.5cm}
+
+    \includegraphics[width=0.85\textwidth]{rmse_missing_frac=0.2.png}
+
+    \vspace{0.5cm}
+
+    \includegraphics[width=0.85\textwidth]{rmse_missing_frac=0.5.png}
+
+    \caption{Plots comparing the RMSE for the two estimation methods (MOGP regression in blue, \Cref{alg:kalman-MOGP-regression} in orange), stratified by kernel type and missingness proportion $\rho$.}
+    \label{fig:rmse-plots}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{mae_missing_frac=0.0.png}
+
+    \vspace{0.5cm}
+
+    \includegraphics[width=0.85\textwidth]{mae_missing_frac=0.2.png}
+
+    \vspace{0.5cm}
+
+    \includegraphics[width=0.85\textwidth]{mae_missing_frac=0.5.png}
+
+    \caption{Plots comparing the MAE for the two estimation methods (MOGP regression in blue, \Cref{alg:kalman-MOGP-regression} in orange), stratified by kernel type and missingness proportion $\rho$.}
+    \label{fig:mae-plots}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{coverage_missing_frac=0.0.png}
+
+    \vspace{0.5cm}
+
+    \includegraphics[width=0.85\textwidth]{coverage_missing_frac=0.2.png}
+
+    \vspace{0.5cm}
+
+    \includegraphics[width=0.85\textwidth]{coverage_missing_frac=0.5.png}
+
+    \caption{Plots comparing the coverage proportions of the 95\% credible intervals, stratified by kernel type and missingness proportion $\rho$.}
+    \label{fig:coverage-plots}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{wall_time_missing_frac=0.0.png}
+
+    \vspace{0.5cm}
+
+    \includegraphics[width=0.85\textwidth]{wall_time_missing_frac=0.2.png}
+
+    \vspace{0.5cm}
+
+    \includegraphics[width=0.85\textwidth]{wall_time_missing_frac=0.5.png}
+
+    \caption{Plots comparing the wall-clock time for the two algorithms of interest, stratified by the kernel type and missingness proportion $\rho$.}
+    \label{fig:wall-clock-plots}
+\end{figure}
 \end{document}

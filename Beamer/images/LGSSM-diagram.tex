@@ -1,0 +1,68 @@
+\documentclass[tikz,border=5pt]{standalone}
+
+\usepackage{amsmath}
+\usetikzlibrary{arrows.meta, positioning}
+\input{../../tex-macros/math-alphabets-ams.tex}
+
+\begin{document}
+
+\begin{tikzpicture}[
+    % State nodes
+    state/.style={
+        rectangle,
+        draw=black,
+        fill=cyan!45,
+        line width=1.5pt,
+        minimum size=2.5cm,
+        inner sep=0pt,
+        font=\huge
+    },
+    % Observation nodes
+    observation/.style={
+        circle,
+        draw=black,
+        fill=green!65,
+        line width=1.5pt,
+        minimum size=2.5cm,
+        inner sep=0pt,
+        font=\huge
+    },
+    % Noise nodes
+    noise/.style={
+        rectangle,
+        draw=black,
+        fill=red!45,
+        line width=1.5pt,
+        minimum size=2.5cm,
+        inner sep=0pt,
+        font=\huge
+    },
+    % Arrows
+    transition/.style={
+        -{Stealth[length=8mm,width=5mm]},
+        line width=1.5pt
+    }
+]
+
+% Latent states
+\node[state] (s0) {$\bfs(0)$};
+\node[state, right=2.5cm of s0] (s1) {$\bfs(1)$};
+\node[state, right=2.5cm of s1] (smid) {$\cdots$};
+\node[state, right=2.5cm of smid] (sJ) {$\bfs(J)$};
+
+% Observations
+\node[observation, above=2.5cm of s1] (y1) {$\bfy(1)$};
+\node[observation, above=2.5cm of sJ] (yJ) {$\bfy(J)$};
+
+% State transitions
+\draw[transition] (s0) -- (s1);
+\draw[transition] (s1) -- (smid);
+\draw[transition] (smid) -- (sJ);
+
+% Observation arrows
+\draw[transition] (s1.north) -- (y1.south);
+\draw[transition] (sJ.north) -- (yJ.south);
+
+\end{tikzpicture}
+
+\end{document}

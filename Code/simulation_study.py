@@ -37,7 +37,14 @@ LOAD_PARAMETERS_KWARGS = {}  # load_parameters arguments fixed across the study,
 PLOT_AXES = ("model", "num_outputs")   # x-axis and panel columns of the summary figures
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
-METHOD_STYLE = {"batch": ("MOGP", "#2a78d6", "o"), "gpkf": ("GPKF", "#eb6834", "s")}
+METHOD_STYLE = {"batch": ("MOGP Regression", "#2a78d6", "o"), "gpkf": ("Kalman-based Regression", "#eb6834", "s")}
+# (D, model) settings that satisfy the assumptions of Todescato et al. (single output, time-separable kernel)
+PRIOR_SETTINGS = {(1, "independent"), (1, "icm"), (1, "lmc")}
+PRIOR_SHADE = {"color": "#58094f", "alpha": 0.10}
+EXTENSION_SHADE = {"color": "#275e11", "alpha": 0.10}
+PRIOR_SHADE_LABEL = "Prior Work (Todescato et al.)"
+EXTENSION_SHADE_LABEL = "Extension"
+MODEL_LABELS = {"independent": "Independent", "icm": "ICM", "lmc": "LMC", "lmc_time": "Temporal LMC"}
 
 
 def run_study(reps, seed, out_path, num_locs=100, end_time=10.0, time_step=0.5, batch=True, redraw_kernel=False):
@@ -87,18 +94,28 @@ def plot_summary(csv_path, out_dir=None):
     model on the x-axis. Figures are saved next to the CSV and returned.
     """
     import matplotlib.pyplot as plt
+    from matplotlib.patches import Patch
 
     df = pd.read_csv(csv_path)
     df = df[df["output"].astype(str) == "all"]
     out_dir = Path(csv_path).parent if out_dir is None else Path(out_dir)
     models = [m for m in GRID["model"] if m in set(df["model"])]
     tasks = ["estimation", "prediction"]
+    task_labels = {"estimation": "Observed Locations", 
+                   "prediction": "Unobserved Locations"}
     metrics = {"rmse": "RMSE", 
                "mae": "MAE",
-               "coverage": "95% coverage", 
-               "wall_time": "wall time [s]"}
+               "coverage": "Coverage", 
+               "wall_time": "Wall time [s]"}
+    metric_titles = {"rmse": "RMSE",
+                     "mae": "MAE",
+                     "coverage": "Coverage",
+                     "wall_time": "Wall Time"}
+    factor_labels = {"missing_frac": "Missing proportion"}   # subtitle names for the other GRID factors
+    factor_formats = {"missing_frac": "{:.0%}"}              # subtitle value formats (default "{:g}")
     others = [k for k in GRID if k not in PLOT_AXES and k in df.columns]
-    grid_label = f"{df['num_locs'].iloc[0]} locations, t = 0:{df['time_step'].iloc[0]:g}:{df['end_time'].iloc[0]:g}"
+    num_times = int(round(df["end_time"].iloc[0] / df["time_step"].iloc[0])) + 1
+    grid_label = f"{df['num_locs'].iloc[0]} locations, {num_times} time instances"
 
     stats = (df.groupby(others + ["num_outputs", "task", "method", "model"])[list(metrics)]
              .agg(["mean", "sem"]))
@@ -106,11 +123,12 @@ def plot_summary(csv_path, out_dir=None):
     for values, sub in (df.groupby(others) if others else [((), df)]):
         values = values if isinstance(values, tuple) else (values,)
         dims = sorted(sub["num_outputs"].unique())
-        title = ", ".join(f"{k} = {v}" for k, v in zip(others, values))
+        title = ", ".join(f"{factor_labels.get(k, k)} = {factor_formats.get(k, '{:g}').format(v)}"
+                          for k, v in zip(others, values))
         suffix = "".join(f"_{k}={v}" for k, v in zip(others, values))
         for metric, label in metrics.items():
             fig, axes = plt.subplots(len(tasks), len(dims), figsize=(3.2 * len(dims) + 1, 5.5),
-                                     sharex=True, sharey="row", layout="constrained", squeeze=False)
+                                     sharex=True, sharey=True, layout="constrained", squeeze=False)
             for (i, task), (j, D) in itertools.product(enumerate(tasks), enumerate(dims)):
                 ax = axes[i, j]
                 for k, (method, (name, color, marker)) in enumerate(METHOD_STYLE.items()):
@@ -122,22 +140,33 @@ def plot_summary(csv_path, out_dir=None):
                     ax.errorbar(x, s[(metric, "mean")], yerr=1.96 * s[(metric, "sem")].fillna(0), color=color,
                                 marker=marker, markersize=6, linestyle="none", capsize=3, linewidth=1.5, label=name)
                 if metric == "coverage":
-                    ax.axhline(0.95, color="#888888", linewidth=1, linestyle="--", label="nominal 0.95")
+                    ax.axhline(0.95, color="#888888", linewidth=1, linestyle="--", label="Nominal 0.95")
                 if metric == "wall_time":
                     ax.set_yscale("log")
                 ax.grid(True, axis="y", color="#dddddd", linewidth=0.6)
                 ax.set_axisbelow(True)
                 for side in ("top", "right"):
                     ax.spines[side].set_visible(False)
-                ax.set_xticks(np.arange(len(models)), models, rotation=30)
+                # ax.set_xticks(np.arange(len(models)), models, rotation=30)
+                ax.set_xticks(np.arange(len(models)), [MODEL_LABELS.get(m, m) for m in models], rotation=30)
+                # shade each model column: red where Todescato et al.'s assumptions hold, green otherwise
+                for m_idx, model in enumerate(models):
+                    in_prior = (D, model) in PRIOR_SETTINGS
+                    ax.axvspan(m_idx - 0.5, m_idx + 0.5, zorder=0, linewidth=0,
+                               **(PRIOR_SHADE if in_prior else EXTENSION_SHADE))
+                ax.set_xlim(-0.5, len(models) - 0.5)
                 if i == 0:
                     ax.set_title(f"D = {D}")
                 if j == 0:
-                    ax.set_ylabel(f"{task}\n{label}")
+                    ax.set_ylabel(f"{task_labels[task]}\n{label}")
             handles, labels = axes[0, 0].get_legend_handles_labels()
-            fig.legend(handles, labels, loc="outside lower center", ncol=3, frameon=False)
-            fig.suptitle(", ".join([label, title, grid_label] if title else [label, grid_label]))
-            fig.savefig(out_dir / f"{metric}{suffix}.png", dpi=120)
+            handles += [Patch(**PRIOR_SHADE), Patch(**EXTENSION_SHADE)]
+            labels += [PRIOR_SHADE_LABEL, EXTENSION_SHADE_LABEL]
+            fig.legend(handles, labels, loc="outside lower center", ncol=len(handles), frameon=False)
+            heading = f"Simulated {metric_titles[metric]} Comparison".replace(" ", r"\ ")
+            subtitle = ", ".join([title, grid_label] if title else [grid_label])
+            fig.suptitle(rf"$\mathbf{{{heading}}}$" + "\n" + subtitle, fontsize=13)
+            fig.savefig(out_dir / f"{metric}{suffix}.pdf", dpi=120)
             figs.append(fig)
     return figs
 

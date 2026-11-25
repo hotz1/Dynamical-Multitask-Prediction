@@ -1,13 +1,3 @@
-% \documentclass[11pt, aspectratio=169]{beamer}
-
-% Basic, unadorned look
-% \usetheme{default}
-% \setbeamertemplate{navigation symbols}{}
-% \setbeamertemplate{footline}[frame number]
-% \setbeamertemplate{itemize items}[circle]
-% \setbeamertemplate{bibliography item}{}
-% \setbeamertemplate{caption}[numbered]
-
 \documentclass[dvipsnames, 11pt]{beamer}
 \setbeamertemplate{footline}[frame number]
 \setbeamertemplate{navigation symbols}{}
@@ -16,33 +6,55 @@
 \usepackage{appendixnumberbeamer}
 \usepackage{tikz}
 \usepackage[utf8]{inputenc}
-% \usepackage{amsmath,amsfonts,amsthm,bm, enumerate, amssymb} 
 \usepackage{booktabs}
 \usepackage[mathscr]{euscript}
 \usepackage{subcaption}
-% \usepackage{dsfont}
-% \usepackage{nicefrac}
+\usepackage{nicefrac}
 \usetheme{Darmstadt}
 
-% Beamer has its own list handling; stop the shared macro file from loading
-% enumerate/enumitem (which break Beamer's itemize/enumerate templates).
-% \expandafter\def\csname ver@enumitem.sty\endcsname{}
-% \expandafter\def\csname ver@enumerate.sty\endcsname{}
-
-% \input{../tex-macros/math-macros.tex}
 \input{../tex-macros/presentation-macros.tex}
 \input{../tex-macros/math-alphabets-ams.tex}
 
 \usepackage{natbib}
-% \bibliographystyle{apalike}
+\bibliographystyle{apalike}
 \usepackage{graphicx}
-\graphicspath{{../Code/results/full/} {./images/}}
+% \graphicspath{{../Code/results/full/} {./images/}}
+\graphicspath{{./images/}}
 
 \newcommand{\calGP}{\mathcal{GP}}
 \DeclareMathOperator{\vect}{vec}
 
+\setbeamertemplate{caption}[numbered]
 \setbeamertemplate{theorems}[numbered]
 \newtheorem{assumption}{Assumption}
+
+\newenvironment{theoremblock}[1]
+{
+    \setbeamercolor{block title}{bg=green!60!black, fg=white}
+    \setbeamercolor{block body}{bg=green!5, fg=black}
+    \begin{theorem}[#1]
+}
+{
+    \end{theorem}
+}
+\newenvironment{definitionblock}[1]
+{
+    \setbeamercolor{block title}{bg=green!60!black, fg=white}
+    \setbeamercolor{block body}{bg=green!5, fg=black}
+    \begin{definition}[#1]
+}
+{
+    \end{definition}
+}
+\newenvironment{assumptionblock}[1]
+{
+    \setbeamercolor{block title}{bg=red!75!black, fg=white}
+    \setbeamercolor{block body}{bg=red!5, fg=black}
+    \begin{assumption}[#1]
+}
+{
+    \end{assumption}
+}
 
 \title{Computationally Efficient Predictions for\\Multi-Output Spatiotemporal Dynamical Systems}
 \author{Joey Hotz}
@@ -73,12 +85,12 @@
         \item 
         Gaussian processes (GPs) are frequently used in modelling unknown functions based on correlated and noisy observations \citep{GPML-Book-2006}. 
         \item 
-        GP regression (\emph{kriging}) yields tractable closed-form solutions, and is widely employed to learn from spatiotemporal data.
+        GP regression (\emph{kriging}) yields tractable closed-form solutions. Kriging is widely employed in fields such as geostatistics, control systems, and ecology to learn from spatiotemporal observations.
         \item 
-        \textbf{Major Concern:} Performing exact inference on $N$ observations requires $\calO(N^3)$ operations.
+        \textbf{Major Drawback:} Performing exact inference on $N$ observations requires $\calO(N^3)$ operations.
         \begin{itemize}
-            \item With repeated measurements, the cost grows cubically in both the number of locations \emph{and} measurements per location.
-            \item Methods which attempt to fix this cubic scaling trade exactness for computational efficiency.
+            \item With repeated measurements, this cost grows cubically in both the number of locations \emph{and} measurements per location.
+            \item Proposed remedies for the cubic scaling cost must trade exactness for computational efficiency.
         \end{itemize}
     \end{itemize}
 \end{frame}
@@ -86,7 +98,7 @@
 \begin{frame}{Project Overview}
     \begin{itemize}
         \item 
-        \citet{Todescato-Efficient-2020} propose an algorithm which uses GP regression in tandem with the \textbf{Kalman filter} to derive efficient estimates in a spatiotemporal dynamical system.
+        \citet{Todescato-Efficient-2020} propose an algorithm which uses GP regression in tandem with the \textbf{Kalman filter} to efficiently estimate the state of a spatiotemporal dynamical system.
         \item 
         Under certain assumptions on the covariance structure, their algorithm accounts for spatial \emph{and} temporal dynamics.
         \item 
@@ -98,11 +110,11 @@
 
 \section{Background}
 
-\begin{frame}{Gaussian Processes}
-    \begin{definition}[Gaussian Process]
+\begin{frame}{Univariate Gaussian Processes}
+    \begin{definitionblock}{Gaussian Process}
     \label{def:GP}
         $f: \calX \to \bbR$ is a GP on $\calX$ if for all finite $\{\bfx_{1}, \dots, \bfx_{N}\} \subseteq \calX$, the random vector $\big(f(\bfx_{1}), \dots, f(\bfx_{N})\big)^{\sfTsmall}$ follows a multivariate Gaussian.
-    \end{definition}
+    \end{definitionblock}
     \begin{itemize}
         \item 
         A GP on $\calX$ is \emph{uniquely} determined by its mean $m(\bfx) = \expec{f(\bfx)}$ and kernel $k(\bfx, \bfx') = \covar{f(\bfx)}{f(\bfx')}$. 
@@ -124,48 +136,8 @@
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Multi-Output Gaussian Processes}
-    \begin{definition}[Multi-Output Gaussian Process]
-    \label{def:MOGP}
-        $\bff = (f_{1}, \dots, f_{D})^{\sfTsmall}: \calX \to \bbR^{D}$ is an MOGP on $\calX$ if for all finite $\{\bfx_{1}, \dots, \bfx_{N}\} \subseteq \calX$, the $ND$ values $f_{d}(\bfx_{i})$ are jointly Gaussian.
-    \end{definition}
-    \begin{itemize}
-        \item 
-        MOGPs model correlations \emph{within} and \emph{between} outputs \citep{Alvarez-Vector-Kernels-2012}.
-        \item 
-        The Gram matrix $\bfK(\bfX, \bfX) \in \bbR^{ND \times ND}$ is built from $N^{2}$ $D \times D$ covariance sub-matrices. 
-        \item
-        The computational cost for MOGP inference over $D$ output dimensions balloons to $\calO(N^{3}D^{3})$.
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Structured MOGP Kernels}
-    \begin{itemize}
-        \item 
-        \textbf{Independent:} $f_{d} \sim \calGP(m_{d}, k_{d})$ are independent univariate GPs. The Gram matrix $\bfK(\bfX, \bfX)$ is block-diagonal.
-        \item
-        \textbf{Linear Model of Coregionalization (LMC):} Output functions $\{f_{d}\}_{d=1}^{D}$ are linear combinations of independent latent GPs $u_{q}^{i} \sim \calGP(0, K^{(q)})$, with 
-        \vspace*{-1em}
-        % \begin{equation*}
-        %     f_{d}(\bfx) = m_{d}(\bfx) + \sum_{q=1}^{Q}\sum_{i=1}^{R_{q}}\alpha_{d,q}^{i}u_{q}^{i}(\bfx)
-        % \end{equation*}
-        {\small
-        \begin{align*}
-            f_{d}(\bfx) &= m_{d}(\bfx) + \sum_{q=1}^{Q}\sum_{i=1}^{R_{q}}\alpha_{d,q}^{i}u_{q}^{i}(\bfx)\\[-0.5em]
-            \bfK(\bfX, \bfX) &= \sum_{q=1}^{Q}k^{(q)}(\bfX, \bfX) \otimes \bfB^{(q)}
-        \end{align*}
-        }
-        \item 
-        \textbf{Intrinsic Coregionalization Model (ICM):} A special case of LMC, where $Q = 1$. Yields a Gram matrix $\bfK(\bfX, \bfX) = k(\bfX, \bfX) \otimes \bfB$.
-    \end{itemize}
-\end{frame}
-
 \begin{frame}{Linear Gaussian State Space Model}
-    % \begin{itemize}
-    %     \item 
-    %     The Kalman filter \citep{Kalman-Filter-1960} is an algorithm for recursively estimating the latent states of a linear dynamical system via noisy measurements.
-    % \end{itemize}
-    \begin{definition}[Linear Gaussian State Space Model]
+    \begin{definitionblock}{Linear Gaussian State Space Model}
         \vspace{-1em}
         {\small
         \begin{align*}
@@ -174,262 +146,414 @@
             \textbf{Observation model:} \quad & \bfy(j) = \bfC(j)\bfs(j) + \bfv(j), && \bfv(j) \sim \calN\big(\mathbf{0}, \bfR(j)\big)
         \end{align*}
         }
-    \end{definition}
+    \end{definitionblock}
     \begin{itemize}
         \item
-        The noise terms $\bfv(j)$ and $\bfw(j)$ in the model are mutually independent. The state transition matrices $\bfA, \bfC, \bfQ, \bfR$ are all known.
+        The noise terms $\bfv(j)$ and $\bfw(j)$ in the model are mutually independent. The state transition matrices $\bfA(j)$ and $\bfC(j)$ are all known, as are the noise covariances $\bfQ(j)$ and $\bfR(j)$.
         \item 
-        Every state and observation is a Gaussian random variable with tractable parameters.
+        Every state $\bfs(j) \in \bbR^{d_{s}}$ and observation $\bfy \in \bbR^{d_{y}}$ is a Gaussian random vector with tractable mean and covariance parameters.
     \end{itemize}
 \end{frame}
 
 \begin{frame}{Linear Gaussian State Space Model}
-    \centering
-    \includegraphics[width=0.8\textwidth]{LGSSM-Diagram.jpg}\\
-    % {\footnotesize Top: $\rho = 0$; bottom: $\rho = 0.5$. Batch MOGP in blue, Kalman MOGP in orange.}
-    \vspace{1em}
-    {\small A graphical diagram of the dynamical system in an LGSSM}
+    \begin{figure}[htbp]
+        \centering
+        \includegraphics[width=0.9\textwidth]{LGSSM-diagram.pdf}
+
+        \caption{A diagram of the state transitions and observations in a linear Gaussian state space model}
+    \end{figure}
 \end{frame}
 
-\begin{frame}{The Kalman Filter}
+\begin{frame}{Kalman Filtering}
     \begin{itemize}
         \item 
-        The Kalman filter \citep{Kalman-Filter-1960} recursively estimates the latent states of a linear dynamical system (LGSSM) based on noisy indirect measurements from the system.
+        The Kalman filter \citep{Kalman-Filter-1960} recursively estimates the latent states of a linear dynamical system (LGSSM) based on noisy indirect measurements.
         \item
-        Each iteration of the algorithm alternates between a \emph{prediction} and an \emph{update} step.
+        Each iteration of the Kalman filtering algorithm alternates between a \emph{prediction} and an \emph{update} step.
         \item
-        \textbf{Computational Cost:} Per-iteration cost is $\calO(m^{3} + n^{3})$, and total cost is $\calO(J(m^{3} + n^{3}))$ \citep{Kalman-Complexity-2019}. This cost is \textbf{linear} in $J$.
+        \textbf{Computational Cost:} The per-iteration cost is $\calO(d_{s}^{3} + d_{y}^{3})$, and total cost is $\calO\big(J(d_{s}^{3} + d_{y}^{3})\big)$ \citep{Kalman-Complexity-2019}. This cost is \textbf{linear} is the number of observation times $J$.
     \end{itemize}
 \end{frame}
 
 \section{Prior Research}
 
-\begin{frame}{Problem Setting}
+\begin{frame}{Problem Setting \citep{Todescato-Efficient-2020}}
     \begin{itemize}
         \item 
         We have a compact state space $\calX \subset \bbR^{P}$, and finite set of observable locations $\calI = \{x_{1}, \dots, x_{M}\} \subseteq \calX$. 
         \item 
-        Goal is to learn an unknown function $f: \calX \times \bbR^{+} \to \bbR$, where $f \sim \calGP(0, K)$.
-        \item
-        Observations recorded at times $t_{0} < t_{1} < \cdots$, with
+        Unknown function $f: \calX \times \bbR^{+} \to \bbR$, with $f \sim \calGP(0, K)$. Observations at instances $t_{0} < t_{1} < \cdots < t_{J}$, described by
         \begin{equation*}
-            y_{i}(t_{j}) = f(x_{i}, t_{j}) + v_{i}(t_{j}), \quad v_{i}(t_{j}) \sim \calN(0, \sigma^{2})
+            y_{i}(t_{j}) = f(x_{i}, t_{j}) + v_{i}(t_{j}), \quad v_{i}(t_{j}) \simiid \calN(0, \sigma^{2})
         \end{equation*}
+        % \item
+        % \textbf{Goal:} Estimate $f(x, t)$ at \emph{any} $x \in \calX$ and $t \in \bbR^{+}$.
         \item
-        \textbf{Goal:} Estimate $f(x, t)$ at \emph{any} $x \in \calX$ and $t \in \bbR^{+}$.
-    \end{itemize}    
-\end{frame}
+        Observed subset $\calM_{j} \subseteq \calI$ ($M_{j} := \abs{\calM_{j}}$) may vary.
+    \end{itemize}   
 
-\begin{frame}{Assumptions}
-    % \begin{itemize}
-    %     \item 
-    %     The authors make two primary assumptions on the underlying mechanics for the dynamical system:
-    % \end{itemize}
-    The authors make two primary assumptions on the underlying mechanics for the dynamical system of interest:
-    \begin{assumption}[Kernel Separability]
+    \uncover<2->{    
+    % \begin{assumption}[Kernel Separability]
+    %     $K((x, t), (x', t')) = K_{s}(x, x')\,\gamma(\tau)$, where $\tau := \abs{t - t'}$.
+    % \end{assumption}
+    \begin{assumptionblock}{Kernel Separability}
         $K((x, t), (x', t')) = K_{s}(x, x')\,\gamma(\tau)$, where $\tau := \abs{t - t'}$.
-    \end{assumption}
-    \begin{assumption}[Rational Power Spectrum]
-        The power spectral density $S(\omega)$ of $\gamma(\tau)$ is a rational function of order $2r$.
-    \end{assumption}
-\end{frame}
+    \end{assumptionblock}
+    }
 
-\begin{frame}{Kalman-Enhanced Regression Algorithm}
-    \footnotesize
-    \begin{algorithmic}[1]
-        \Require $(F,G,H)$, $\sigma^{2}$, $\calI$, $K_{s}$, $\gamma$, $\bfSigma_{0}$ (Lyapunov solution)
-        \State $\widehat{\bfs}(0 \mid 0) = \mathbf{0}$, $\bfSigma(0 \mid 0) = \bfI \otimes \bfSigma_{0}$, $j \gets 0$
-        \Statex \texttt{\# Kalman estimates}
-        \While{$j \le J$ and $t_{j+1} \le t$}
-            \State Compute $A(j), C(j), Q(j), R(j)$
-            \State Kalman filter $\to \widehat{\bfs}(j+1 \mid j+1), \bfSigma(j+1 \mid j+1)$
-            \State $j \gets j + 1$
-        \EndWhile
-        \Statex \texttt{\# Open-loop prediction}
-        \State $\tau = t - t_{j}$
-        \State $\widehat{\bfs}(t) = e^{\tau(\bfI \otimes F)}\widehat{\bfs}(j \mid j)$
-        \State $\bfSigma^{\bfs}(t) = e^{\tau(\bfI \otimes F)}\bfSigma(j \mid j)\big(e^{\tau(\bfI \otimes F)}\big)^{\sfTsmall}$
-        \Statex \texttt{\# Process estimate}
-        \State $\widehat{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\widehat{\bfs}(t)$
-        \State $\bfSigma^{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\bfSigma^{\bfs}(t)(\bfI \otimes H)^{\sfTsmall}\overline{K}_{s}^{1/2}$
-        \State \Return $\widehat{\bff}(t)$, $\bfSigma^{\bff}(t)$
-    \end{algorithmic}    
+    \uncover<3->{
+    % \begin{assumption}[Rational Power Spectrum]
+    %     The power spectral density $S(\omega)$ of $\gamma(\tau)$ is a rational function of order $2r$.
+    % \end{assumption}
+    \begin{assumptionblock}{Rational Power Spectrum}
+        The power spectral density $S(\omega)$ of $\gamma(\tau)$ is a rational function of order $2r$.
+    \end{assumptionblock}
+    }
 \end{frame}
 
 \begin{frame}{Dynamic Representer Theorem}
-    \begin{theorem}[Dynamic Representer Theorem \citealp{Todescato-Efficient-2020}]
-        Under Assumptions 1 and 2, for any $x \in \calX$ and $t \ge t_{J}$, the proposed algorithm yields a minimum-variance estimator $\widehat{f}(x, t)$ of $f(x, t)$. 
-    \end{theorem}
+    \begin{theoremblock}{Dynamic Representer Theorem}
+        Under Assumptions 1 and 2, for any $x \in \calX$ and $t \ge t_{J}$, the Kalman-enhanced regression algorithm of \citeauthor{Todescato-Efficient-2020} yields a minimum-variance estimator $\widehat{f}(x, t)$ of $f(x, t)$. 
+    \end{theoremblock}
     \begin{itemize}
         \item 
-        Key idea: $f(x, t) \indep \bff(t') \mid \bff(t)$ for $t' \ne t$.
+        \textbf{Key Lemma:} $f(x, t) \indep \bff(t') \mid \bff(t)$ for $t' \ne t$.
         \item
-        The filtered output from the algorithm serves as a posterior GP at time $t$, giving a minimum-variance estimator of $f(x, t)$ at all $x \in \calX$.
+        The filtered output $\widehat{\bff}(t)$ from the Kalman-enhanced algorithm serves as a posterior GP over $\calI$ at time $t$. The posterior $\widehat{\bff}(t)$ can be used to compute a minimum-variance estimator of $f(x, t)$ at any $x \in \calX$.
         \item 
-        Cost per update is $\calO(rMM_{j} + rM_{j}^{3})$ when $\overline{K}_{s}(\calI, \calI)^{-1}$ is precomputed. 
+        Cost per update is $\calO(rMM_{j} + rM_{j}^{3})$ when the matrix $\overline{K}_{s}(\calI, \calI)^{-1}$ is precomputed. 
     \end{itemize}
 \end{frame}
 
-\section{Simulation Study}
+\section{Extension}
 
-\begin{frame}{Multi-Output Dynamical System}
-    \begin{assumption}[All-or-Nothing Missingness]
-        For any location $\bfx_{i}$ and time $t_{j}$, the $D$ entries of $\bfy_{i}(t_{j}) \in \bbR^{D}$ are either all recorded or all missing.
-    \end{assumption}
+\begin{frame}{Multi-Output Gaussian Processes}
+    \begin{definitionblock}{Multi-Output Gaussian Process}
+    \label{def:MOGP}
+        $\bff = (f_{1}, \dots, f_{D})^{\sfTsmall}: \calX \to \bbR^{D}$ is an MOGP on $\calX$ if for all finite $\{\bfx_{1}, \dots, \bfx_{N}\} \subseteq \calX$, the $ND$ values $f_{d}(\bfx_{i})$ are jointly Gaussian.
+    \end{definitionblock}
+    \begin{itemize}
+        \item 
+        MOGPs model \emph{auto-correlations} within a response vector and \emph{cross-correlations} between responses \citep{Alvarez-Vector-Kernels-2012}.
+        \item 
+        The Gram matrix $\bfK(\bfX, \bfX) \in \bbR^{ND \times ND}$ is built from $N^{2}$ $D \times D$ covariance sub-matrices. 
+        \item
+        In general, the computational cost of MOGP inference on $N$ $D$-dimensional responses is $\calO(N^{3}D^{3})$.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Structured MOGP Kernels}
+    \begin{itemize}
+        \item 
+        \textbf{Independent:} $f_{d} \sim \calGP(m_{d}, k_{d})$ are independent univariate GPs. The Gram matrix $\bfK(\bfX, \bfX)$ is block-diagonal.
+        \item
+        \textbf{Linear Model of Coregionalization (LMC):} Output functions $\{f_{d}\}_{d=1}^{D}$ are linear combinations of independent latent GPs $u_{q}^{i} \sim \calGP(0, k^{(q)})$, with 
+        \vspace*{-1em}
+        {\small
+        \begin{align*}
+            f_{d}(\bfx) &= m_{d}(\bfx) + \sum_{q=1}^{Q}\sum_{i=1}^{R_{q}}\alpha_{d,q}^{i}u_{q}^{i}(\bfx)\\[-0.5em]
+            \bfK(\bfX, \bfX) &= \sum_{q=1}^{Q}k^{(q)}(\bfX, \bfX) \otimes \bfB^{(q)}
+        \end{align*}
+        }
+        \item 
+        \textbf{Intrinsic Coregionalization Model (ICM):} A special case of the LMC kernel with $Q = 1$. Yields a Gram matrix of the form $\bfK(\bfX, \bfX) = k(\bfX, \bfX) \otimes \bfB$.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Multi-Output Setting}
     \begin{itemize}
         \item
-        Observation model: 
-        \begin{equation}
-            bfy_{i}(t_{j}) = \bff(x_{i}, t_{j}) + \bfv_{i}(t_{j}), \quad \bfv_{i}(t_{j}) \sim \calN(\mathbf{0}, \bfV)
-        \end{equation}
+        Unknown function $f: \calX \times \bbR^{+} \to \bbR^{D}$, with $f \sim \calGP(0, \bfK)$.
+        \item 
+        Observe data at instances $t_{0} < t_{1} < \cdots < t_{J}$, described by
+        \begin{equation*}
+            \bfy_{i}(t_{j}) = \bff(\bfx_{i}, t_{j}) + \bfv_{i}(t_{j}), \quad \bfv_{i}(t_{j}) \simiid \calN(0, \bfV)
+        \end{equation*}
         \item
-        The kernel function $\bfK(\bfX, \bfX)$ is a sum of $Q$ time-separable kernels.
+        \textbf{Relaxed Separability Assumption:} The MOGP kernel function $\bfK$ is a sum of $Q$ time-separable kernels.
         \item
         The setting considered by \citeauthor{Todescato-Efficient-2020} is the special case where $Q = 1, D = 1$. 
-        % Relax separability: the kernel may be a \textbf{sum of $Q$ time-separable kernels} (LMC form),
-        % \[
-        %     K\big((x, t, d), (x', t', d')\big) = \sum_{q=1}^{Q}\gamma^{(q)}(\abs{t - t'})\,K_{s}^{(q)}(x, x')\,\bfB^{(q)}(d, d'),
-        % \]
-        % where each $\gamma^{(q)}$ has a rational spectrum of order $2r_{q}$; let $R_{Q} := \sum_{q} r_{q}$.
-        % \item The original algorithm is the special case $Q = 1$, $D = 1$.
     \end{itemize}
+    \uncover<2->{
+    \begin{assumptionblock}{All-or-Nothing Missingness}
+        For any location $\bfx_{i}$ and time $t_{j}$, the $D$ entries of $\bfy_{i}(t_{j}) \in \bbR^{D}$ are either all available, or all missing.
+    \end{assumptionblock}
+    }
 \end{frame}
 
 \begin{frame}{Simulation Kernels}
     For our simulation study, we focus on four MOGP kernel settings:
     {\small
     \begin{align*}
-        \textbf{Independent:} &\quad \exp(-\abs{t - t'})K_{\textrm{RBF}}(x, x')\sigma^{2}_{d}\mathbf{1}_{\{d = d'\}}\\[1.5em]
+        \textbf{Independent:} &\quad \exp(-\abs{t - t'})K_{\textrm{RBF}}(x, x')\sigma^{2}_{d}\mathbf{1}_{\{d = d'\}}\\
         \textbf{ICM:} &\quad \exp(-\abs{t - t'})K_{\textrm{RBF}}(x, x')\bfB(d, d')\\
-        \textbf{LMC:} &\quad \exp(-\abs{t - t'})\sum_{q=1}^{Q}C_{7/2 - q}(x, x')\bfB^{(q)}(d, d')\\
-        \textbf{Temporal LMC:} &\quad \sum_{q=1}^{Q}\exp\!\Big(-\frac{\abs{t - t'}}{q}\Big)C_{7/2 - q}(x, x')\bfB^{(q)}(d, d')
+        \textbf{LMC:} &\quad \exp(-\abs{t - t'})\sum_{q=1}^{3}C_{7/2 - q}(x, x')\bfB^{(q)}(d, d')\\
+        \textbf{Temporal LMC:} &\quad \sum_{q=1}^{3}\exp\!\Big(\!-\frac{\abs{t - t'}}{q}\Big)C_{7/2 - q}(x, x')\bfB^{(q)}(d, d')
     \end{align*}
     }
+    $K_{\textrm{RBF}}$ represents the RBF kernel function, and $C_{\nu}$ is the Mat{\'e}rn covariance with parameter $\nu$. 
 \end{frame}
 
-
+\begin{frame}{Simulation Details}
+    \begin{itemize}
+        \item 
+        Simulated observations generated from a zero-mean MOGP at 150 evenly-spaced locations on a 1-D grid, observed at 21 times $t \in \{0, \nicefrac{1}{2}, \dots, 10\}$.
+        \item
+        80\% of locations are observed, 20\% held out for prediction.
+        \item
+        A fixed proportion $\rho$ of observations are randomly deleted.
+        \item
+        Full-factorial design, with 20 simulations per combination:
+        \begin{itemize}
+            \item MOGP Kernels: Independent, ICM, LMC, Temporal LMC
+            \item Output dimension $D \in \{1, 2, 3, 5\}$
+            \item Missingness proportion $\rho \in \{0, 0.2, 0.5\}$
+        \end{itemize}
+        \item
+        Implemented in Python 3.12 \citep{python-3-12-5} using \texttt{GPyTorch} \citep{GPyTorch-Library-2018}, based on MATLAB code from \citet{Carron-ML-Kalman-2016} and \citet{Todescato-Efficient-2020}. 
+    \end{itemize}
+\end{frame}
 
 \section{Results}
 \begin{frame}{Results: RMSE}
-    \centering
-    \includegraphics[height=0.35\textheight]{rmse_missing_frac=0.0.png}\\
-    \includegraphics[height=0.35\textheight]{rmse_missing_frac=0.5.png}\\
-    {\footnotesize Top: $\rho = 0$; bottom: $\rho = 0.5$. Batch MOGP in blue, Kalman MOGP in orange.}
-\end{frame}   
+    \begin{figure}[htbp]
+        \centering
+        \includegraphics[height=0.35\textheight]{shaded_plots/rmse_missing_frac=0.0.pdf}\\[1em]
+        \includegraphics[height=0.35\textheight]{shaded_plots/rmse_missing_frac=0.5.pdf}
 
-\begin{frame}{Results: MAE}
-    \centering
-    \includegraphics[height=0.35\textheight]{mae_missing_frac=0.0.png}\\
-    \includegraphics[height=0.35\textheight]{mae_missing_frac=0.5.png}\\
-    {\footnotesize Top: $\rho = 0$; bottom: $\rho = 0.5$. Batch MOGP in blue, Kalman MOGP in orange.}
-\end{frame}  
+        \caption{{\small Plots of RMSE for $\rho = 0\%$ (top) and $\rho = 50\%$ (bottom)}}
+    \end{figure}
+\end{frame}
 
-% \begin{frame}{Overall Findings}
-%     \begin{itemize}
-%         \item 
-%     \end{itemize}
+\begin{frame}{Results: Wall Clock Time}
+    \begin{figure}[htbp]
+        \centering
+        \includegraphics[height=0.35\textheight]{shaded_plots/wall_time_missing_frac=0.0.pdf}\\[1em]
+        \includegraphics[height=0.35\textheight]{shaded_plots/wall_time_missing_frac=0.5.pdf}
+
+        \caption{{\small Plots of elapsed wall clock time for $\rho = 0\%$ (top) and $\rho = 50\%$ (bottom)}}
+    \end{figure}
+\end{frame}
+
+% \begin{frame}{Results: Coverage}
+%     \begin{figure}[htbp]
+%         \centering
+%         \includegraphics[height=0.35\textheight]{shaded_plots/coverage_missing_frac=0.0.pdf}\\[1em]
+%         \includegraphics[height=0.35\textheight]{shaded_plots/coverage_missing_frac=0.5.pdf}
+
+%         \caption{{\small Plots of empirical 95\% credible interval coverage for $\rho = 0\%$ (top) and $\rho = 50\%$ (bottom)}}
+%     \end{figure}
 % \end{frame}
 
 \section{Discussion}
 \begin{frame}{Conclusions}
-    % \textbf{Conclusions:}
     \begin{itemize}
         \item
-        This work extends the Kalman-based GP regression algorithm of \citet{Todescato-Efficient-2020} to multi-output spatiotemporal dynamical systems. 
-        \item
-        Empirical accuracy in simulations is close to the batch MOGP regression, with well-calibrated credible intervals and significantly faster predictions. 
+        This project extends the Kalman-based Gaussian process regression algorithm of \citet{Todescato-Efficient-2020} for multi-output spatiotemporal dynamical systems. 
         \item 
-        The multi-output method is robust to relaxed separability requirements.
+        The multi-output method seems robust to some relaxation of the spatiotemporal kernel separability assumptions.
+        \item
+        Empirical accuracy in simulations is close to that of MOGP regression, and credible intervals are well-calibrated.
+        \item 
+        Most importantly, the Kalman-based MOGP regression method significantly increases the speed of computing predictions of the unknown states.
     \end{itemize}
 \end{frame}
 
 \begin{frame}{Limitations}
-    % \textbf{Limitations}
     \begin{itemize}
         \item
-        The simulation study covers a limited range of settings, and could be extended further.
+        The simulation study covers a limited number of combinations of settings, and could benefit from further extensions, such as alternative kernel functions and more complex state spaces. 
         \item 
-        Computational and memory limits prevent runs with $D > 5$ outputs, which is exactly where the scaling benefits should be largest.
+        Computational and memory limits prevented simulations with $D > 5$, which are settings where our algorithm should most significantly outperform standard MOGP regression.
+        \item
+        The simulation study assumes that the kernel function $\bfK$ is known, which is a strict and unrealistic assumption.
     \end{itemize}
 \end{frame}
 
 \begin{frame}{Future Work}
     \begin{itemize}
-        \item \textbf{Real data:} apply the algorithm to datasets from ecology, environmental science, or geostatistics to test how well the assumptions hold in practice.
-        % \item \textbf{Richer simulations:} irregular or 2-D input locations (e.g.\ random points on a plane, space-filling curves).
-        % \item \textbf{Smoothing:} use Rauch--Tung--Striebel \citep{Rauch-RTSS-1965} or modified Bryson--Frazier \citep{Colemont-MBF-Smoothing-2026} smoothers to estimate latent states at \emph{any} observation time.
-        \item \textbf{Unknown dynamics:} learn kernel hyperparameters jointly with the latent states (e.g.\ variational inference, empirical Bayes).
-        \item \textbf{Change-points:} extend to systems with time-varying behaviour.
+        \item 
+        \textbf{Real Data:} Apply the proposed multi-output algorithm to spatiotemporal datasets to assess how well the modelling assumptions hold in practice. 
+        \item 
+        \textbf{Unknown Dynamics:} Learn kernel hyperparameters jointly with latent states in the model using methods such as variational inference or empirical Bayes.
+        \item \textbf{Change-points:} Extend the algorithm to dynamical systems whose underlying mechanics change at some point in time.
     \end{itemize}
 \end{frame}
 
-
 \begin{frame}[allowframebreaks]{References}
-    % \tiny
     \footnotesize
-    % \bibliography{../Paper/references}
-    \bibliographystyle{apalike}
+    \nocite{Sarkka-GP-KF-2013,Bayesian-Filter-Book-2023}
     \bibliography{presentation-references}
 \end{frame}
 
 \appendix
 
-\begin{frame}{Gaussian Process Complexity}
-    \begin{itemize}
-        \item GP regression on a dataset containing $N$ observations typically has a $\calO(N^{3})$ computational cost. 
-        \item The computational bottleneck arises from computing the \emph{Cholesky factorization} $\bfK = \bfL\bfL^{\sfTsmall}$ \citep{GPML-Book-2006}.
-    \end{itemize}   
+% \section{Plots}
+
+\section{Algorithms}
+
+\begin{frame}{Kalman Filtering Algorithm \citep{Kalman-Filter-1960}}
+    \footnotesize
+    \begin{algorithmic}[1]
+        \Require
+            \Statex \hspace{\algorithmicindent} $\widehat{\bfm}(0 \mid 0)$: expected value of the initial state $\bfs(0)$       
+            \Statex \hspace{\algorithmicindent} $\bfSigma(0 \mid 0)$: variance of the initial latent state $\bfs(0)$
+        \For{$j = 1$ to $J$}
+            \Statex \texttt{\# Prediction Step:}
+            \State $\widehat{\bfm}(j \mid j-1) = \bfA(j-1)\widehat{\bfm}(j-1 \mid j-1)$
+            \State $\bfSigma(j \mid j-1) = \bfA(j-1)\bfSigma(j-1 \mid j-1)\bfA(j-1)^{\sfTsmall} + \bfQ(j-1)$
+
+            \Statex \texttt{\# Update Step:}
+            \State $\bfd(j) = \bfy(j) - \bfC(j)\widehat{\bfm}(j \mid j-1)$
+            \State $\bfS(j) = \bfC(j)\bfSigma(j \mid j-1)\bfC(j)^{\sfTsmall} + \bfR(j)$
+            \State $\bfK(j) = \bfSigma(j \mid j-1)\bfC(j)^{\sfTsmall}\bfS(j)^{-1}$ % \Comment{Kalman gain}
+            \State $\widehat{\bfm}(j \mid j) = \widehat{\bfm}(j \mid j-1) + \bfK(j)\bfd(j)$
+            \State $\bfSigma(j \mid j) = \bfSigma(j \mid j-1) - \bfK(j)\bfS(j)\bfK(j)^{\sfTsmall}$
+        \EndFor
+    \end{algorithmic}
 \end{frame}
 
-\begin{frame}{Kalman Filtering Algorithm}
-    % \phantom{}
-    % \begin{algorithm}[H]
-    %     \caption{The Kalman Filter \citep{Kalman-Filter-1960}}
-    %     \label{alg:kalman-filter}
-        
-        \footnotesize
-        \begin{algorithmic}[1]
-            \Require
-                \Statex \hspace{\algorithmicindent} $\widehat{\bfm}(0 \mid 0)$: expected value of the initial state $\bfs(0)$       
-                \Statex \hspace{\algorithmicindent} $\bfSigma(0 \mid 0)$: variance of the initial latent state $\bfs(0)$
-            \For{$j = 1$ to $J$}
-                \Statex \texttt{\# Prediction Step:}
-                \State $\widehat{\bfm}(j \mid j-1) = \bfA(j-1)\widehat{\bfm}(j-1 \mid j-1)$
-                \State $\bfSigma(j \mid j-1) = \bfA(j-1)\bfSigma(j-1 \mid j-1)\bfA(j-1)^{\sfTsmall} + \bfQ(j-1)$
-
-                \Statex \texttt{\# Update Step:}
-                \State $\bfd(j) = \bfy(j) - \bfC(j)\widehat{\bfm}(j \mid j-1)$
-                \State $\bfS(j) = \bfC(j)\bfSigma(j \mid j-1)\bfC(j)^{\sfTsmall} + \bfR(j)$
-                \State $\bfK(j) = \bfSigma(j \mid j-1)\bfC(j)^{\sfTsmall}\bfS(j)^{-1}$ % \Comment{Kalman gain}
-                \State $\widehat{\bfm}(j \mid j) = \widehat{\bfm}(j \mid j-1) + \bfK(j)\bfd(j)$
-                \State $\bfSigma(j \mid j) = \bfSigma(j \mid j-1) - \bfK(j)\bfS(j)\bfK(j)^{\sfTsmall}$
-            \EndFor
-        \end{algorithmic}
-    % \end{algorithm}
+\begin{frame}{Kalman-Enhanced GP Regression \citep{Todescato-Efficient-2020}}
+    \footnotesize
+    \begin{algorithmic}[1]
+        \Require $(F,G,H)$, $\sigma^{2}$, $\calI$, $K_{s}$, $\gamma$, $\bfSigma_{0}$
+        \State $\widehat{\bfs}(0 \mid 0) = \mathbf{0}$, $\bfSigma(0 \mid 0) = \bfI \otimes \bfSigma_{0}$, $j \gets 0$
+        \Statex \texttt{\# Kalman updates}
+        \While{$j \le J$ and $t_{j+1} \le t$}
+            \State Compute $A(j), C(j), Q(j), R(j)$
+            \State Compute $\widehat{\bfs}(j+1 \mid j+1), \bfSigma(j+1 \mid j+1)$ via Kalman filter update
+            \State $j \gets j + 1$
+        \EndWhile
+        \Statex \texttt{\# Open-loop prediction}
+        \State $\tau = t - t_{j}$
+        \State $\widehat{\bfs}(t) = \big(e^{\tau(\bfI \otimes F)}\big)\,\widehat{\bfs}(j \mid j)$
+        \State $\bfSigma^{\bfs}(t) = \big(e^{\tau(\bfI \otimes F)}\big)\bfSigma(j \mid j)\big(e^{\tau(\bfI \otimes F)}\big)^{\sfTsmall}$
+        \Statex \texttt{\# Process estimate}
+        \State $\widehat{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\,\widehat{\bfs}(t)$
+        \State $\bfSigma^{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\bfSigma^{\bfs}(t)(\bfI \otimes H)^{\sfTsmall}\,\overline{K}_{s}^{1/2}$
+        \State \Return $\widehat{\bff}(t)$, $\bfSigma^{\bff}(t)$
+    \end{algorithmic}    
 \end{frame}
 
-\begin{frame}{Kalman Filter Complexity}
+\begin{frame}{Kalman-Enhanced MOGP Regression (Hotz, 2026)}
+    \footnotesize
+    \begin{algorithmic}[1]
+        \Require $\{(F_{q},G_{q},H_{q})\}_{q=1}^{Q}$, $\bfV$, $\calI$, $\{K_{s}^{(q)}\}_{q=1}^{Q}$, $\{\bfB^{(q)}\}_{q=1}^{Q}$, $\{\gamma^{(q)}\}_{q=1}^{Q}$, $\bfSigma_{0}$
+        \State Build companion matrices $\overline{F}, \overline{G}, \{\widetilde{H}_{q}\}_{q=1}^{Q}$
+        \State $\bfH = \sum_{q=1}^{Q}\big([\overline{K}_{s}^{(q)}]^{1/2} \otimes [\bfB^{(q)}]^{1/2}\big)(\bfI_{MD} \otimes \widetilde{H}_{q})$
+        \State $\widehat{\bfs}(0 \mid 0) = \mathbf{0}$, $\bfSigma(0 \mid 0) = \bfI_{MD} \otimes \bfSigma_{0}$, $j \gets 0$
+        \Statex \texttt{\# Kalman updates}
+        \While{$j \le J$ and $t_{j+1} \le t$}
+            \State Compute $A(j), C(j), Q(j), R(j)$
+            \State Compute $\widehat{\bfs}(j+1 \mid j+1), \bfSigma(j+1 \mid j+1)$ via Kalman filter update
+            \State $j \gets j + 1$
+        \EndWhile
+        \Statex \texttt{\# Open-loop prediction}
+        \State $\tau = t - t_{j}$
+        \State $\widehat{\bfs}(t) = \big(e^{\tau(\bfI \otimes \overline{F})}\big)\,\widehat{\bfs}(j \mid j)$
+        \State $\bfSigma^{\bfs}(t) = \big(e^{\tau(\bfI \otimes \overline{F})}\big)\bfSigma(j \mid j)\big(e^{\tau(\bfI \otimes \overline{F})}\big)^{\sfTsmall}$
+        \Statex \texttt{\# Process estimate}
+        % \State $\widehat{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\,\widehat{\bfs}(t)$
+        \State $\widehat{\bff}(t) = \bfH\,\widehat{\bfs}(t)$
+        % \State $\bfSigma^{\bff}(t) = \overline{K}_{s}^{1/2}(\bfI \otimes H)\bfSigma^{\bfs}(t)(\bfI \otimes H)^{\sfTsmall}\,\overline{K}_{s}^{1/2}$
+        \State $\bfSigma^{\bff}(t) = \bfH\,\bfSigma^{\bfs}(t)\,\bfH^{\sfTsmall}$
+        \State \Return $\widehat{\bff}(t)$, $\bfSigma^{\bff}(t)$
+    \end{algorithmic}   
+\end{frame}
+
+\section{Definitions}
+
+\begin{frame}{Power Spectral Density}  
+    \begin{definitionblock}{Power Spectral Density}
+        The power spectral density (PSD) of a univariate real-valued function $z(\tau)$ is
+        \begin{equation*}
+            S(\omega) = \int z(\tau)e^{-2\pi{i}\omega\tau}\dx[\tau]
+        \end{equation*}        
+    \end{definitionblock} 
+\end{frame}
+
+\begin{frame}{Stationary and Isotropic Kernels}
+    \begin{definitionblock}{Stationary Kernel}
+        A kernel function $k: \calX \times \calX \to \bbR$ is a stationary kernel if the function can be written in the form $k(x, x') = \varphi(x - x')$ for some $\varphi: \bbR \to \bbR$. 
+    \end{definitionblock}
+
+    \begin{definitionblock}{Isotropic Kernel}
+        A kernel function $k: \calX \times \calX \to \bbR$ is isotropic if it can be written in the form $k(x, x') = \kappa(\norm{x - x'})$ for some $\kappa: \bbR \to \bbR$.
+    \end{definitionblock}
+\end{frame}
+
+\begin{frame}{RBF and Mat{\'e}rn Kernels}
     \begin{itemize}
+        \item     
+        The RBF and Mat{\'e}rn kernels are standard isotropic kernel functions often used in Gaussian process regression.
         \item 
+        For these functions, we set $d := \norm{x - x'}$, with scaling hyperparameters $\sigma^{2}$ and $\ell$. 
     \end{itemize}
+    {\small
+    \begin{align*}
+        \textnormal{\textbf{Mat{\'e}rn(1/2):}} &\quad C_{1/2}(x, x') = \sigma^{2}\exp\!\Big(-\frac{d}{\ell}\Big)\\
+        \textnormal{\textbf{Mat{\'e}rn(3/2):}} &\quad C_{3/2}(x, x') = \sigma^{2}\Big(1 + \frac{\sqrt{3}d}{\ell}\Big)\exp\!\Big(-\frac{\sqrt{3}d}{\ell}\Big)\\
+        \textnormal{\textbf{Mat{\'e}rn(5/2):}} &\quad C_{5/2}(x, x') = \sigma^{2}\Big(1 + \frac{\sqrt{5}d}{\ell} + \frac{{5}d^{2}}{3\ell^{2}}\Big)\exp\!\Big(-\frac{\sqrt{5}d}{\ell}\Big)\\
+        \textnormal{\textbf{Gaussian (RBF):}} &\quad K_{\textrm{RBF}}(x, x') = \sigma^{2}\exp\!\Big(-\frac{d^{2}}{2\ell^{2}}\Big)
+    \end{align*}  
+    }  
 \end{frame}
 
-\begin{frame}{Power Spectrum}   
-    \begin{itemize}
-        \item The power spectral density
-    \end{itemize}
+% \section{Theoretical Results}
+
+% \begin{frame}{Proof of Dynamic Representer Theorem}
+%     \begin{itemize}
+%         \item 
+%     \end{itemize}
+% \end{frame}
+
+% \begin{frame}{Gaussian Process Complexity}
+%     \begin{itemize}
+%         \item GP regression on a dataset containing $N$ observations typically has a $\calO(N^{3})$ computational cost. 
+%         \item The computational bottleneck arises from computing the \emph{Cholesky factorization} $\bfK = \bfL\bfL^{\sfTsmall}$ \citep{GPML-Book-2006}.
+%     \end{itemize}   
+% \end{frame}
+
+% \begin{frame}{Kalman Filter Complexity}
+%     \begin{itemize}
+%         \item 
+%     \end{itemize}
+% \end{frame}
+
+% \begin{frame}{State-Space Representation}
+%     \begin{itemize}
+%         \item The state-space representation $(F, G, H)$
+%     \end{itemize}
+% \end{frame}
+
+\section{Plots}
+
+\begin{frame}[allowframebreaks]{Results: RMSE}
+    \centering
+    \includegraphics[width=0.95\textwidth]{shaded_plots/rmse_missing_frac=0.0.pdf}\\[1em]
+    \includegraphics[width=0.95\textwidth]{shaded_plots/rmse_missing_frac=0.2.pdf}\\[1em]
+    \includegraphics[width=0.95\textwidth]{shaded_plots/rmse_missing_frac=0.5.pdf}
 \end{frame}
 
-\begin{frame}{State-Space Representation}
-    \begin{itemize}
-        \item The state-space representation $(F, G, H)$
-    \end{itemize}
+\begin{frame}[allowframebreaks]{Results: Wall Clock Time}
+    \centering
+    \includegraphics[width=0.95\textwidth]{shaded_plots/wall_time_missing_frac=0.0.pdf}\\[1em]
+    \includegraphics[width=0.95\textwidth]{shaded_plots/wall_time_missing_frac=0.2.pdf}\\[1em]
+    \includegraphics[width=0.95\textwidth]{shaded_plots/wall_time_missing_frac=0.5.pdf}
 \end{frame}
 
-\begin{frame}{Why Kronecker Products?} 
-    \begin{equation*}
-        \bfK(\bfX, \bfX) =
-    \end{equation*}
+\begin{frame}[allowframebreaks]{Results: MAE}
+    \centering
+    \includegraphics[width=0.95\textwidth]{shaded_plots/mae_missing_frac=0.0.pdf}\\[1em]
+    \includegraphics[width=0.95\textwidth]{shaded_plots/mae_missing_frac=0.2.pdf}\\[1em]
+    \includegraphics[width=0.95\textwidth]{shaded_plots/mae_missing_frac=0.5.pdf}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{Results: Coverage}
+    \centering
+    \includegraphics[width=0.95\textwidth]{shaded_plots/coverage_missing_frac=0.0.pdf}\\[1em]
+    \includegraphics[width=0.95\textwidth]{shaded_plots/coverage_missing_frac=0.2.pdf}\\[1em]
+    \includegraphics[width=0.95\textwidth]{shaded_plots/coverage_missing_frac=0.5.pdf}
 \end{frame}
 
 \end{document}
